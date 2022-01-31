@@ -15,7 +15,7 @@ COPY . /app
 
 RUN \
     # install depends
-    apk add --no-cache --virtual .build-deps build-base musl-dev python3-dev libffi-dev openssl-dev cargo ; \
+    apk add --no-cache --virtual .build-deps build-base musl-dev python3-dev libffi-dev openssl-dev libxml2-dev libxslt-dev cargo ; \
     if [ "$ENV" = "rex" ]; then echo "Change depends" \
     && mkdir /root/.cargo && cp /app/cargo.config.toml /root/.cargo/config.toml \
     ; fi \
