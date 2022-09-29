@@ -9,20 +9,22 @@
 ## Install
 ```shell
 docker pull ray1ex/dnsrobocert:latest
-docker run -dit -v /your/path/config.yml:/etc/dnsrobocert.yml \
-  -v /your/path/data:/data \
+docker run -dit --restart unless-stopped \ 
   -e UID=1000 -e GID=1000 \
+  -v /your/path/config.yml:/etc/dnsrobocert.yml \
+  -v /your/path/data:/data \
+  -v /your/path/nginx:/nginx \
   --name dnsrobocert ray1ex/dnsrobocert
 ```
 
 # Environment Variables
 
-| Name      | Defaule Value              | Memo |
-|-----------|----------------------------|------|
-| GID       | 1000                       | -    |
-| UID       | 1000                       | -    |
+| Name | Defaule Value |
+|------|---------------|
+| GID  | 1000          |
+| UID  | 1000          |
 
-# Deploy Hook for Nginx Example
+# Deploy Hook Example for Nginx
 
 `config.yml`
 ```yaml
@@ -48,10 +50,8 @@ certificates:
 ```shell
 #!/bin/sh
 
-mkdir /data/nginx-certs
-
-/bin/cp -f /data/archive/your.domain.com/privkey1.pem /data/nginx-certs/your.domain.com.key
-/bin/cp -f /data/archive/your.domain.com/fullchain1.pem /data/nginx-certs/your.domain.com.crt
+/bin/cp -f /data/archive/your.domain.com/privkey1.pem /nginx/your.domain.com.key
+/bin/cp -f /data/archive/your.domain.com/fullchain1.pem /nginx/your.domain.com.crt
 ```
 
 # More Info

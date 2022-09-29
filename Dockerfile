@@ -29,9 +29,11 @@ RUN \
     && adduser -S -D -G runner -u $UID runner \
     # prepare data path
     && mkdir /config \
-    && mkdir /data
+    && mkdir /data \
+    && mkdir /nginx
 
 WORKDIR /app
 VOLUME /data
+VOLUME /nginx
 
 CMD /app/entrypoint.sh
