@@ -12,5 +12,6 @@ Runner gid: $(id -g runner)
 "
 
 chown -R runner:runner /data
+chown -R runner:runner /nginx
 
 su runner -s /app/runserver.sh
