@@ -14,4 +14,4 @@ Runner gid: $(id -g runner)
 chown -R runner:runner /data
 chown -R runner:runner /nginx
 
-su runner -s /app/runserver.sh
+su runner -c "/usr/local/bin/dnsrobocert --config /etc/dnsrobocert.yml --directory /data"
