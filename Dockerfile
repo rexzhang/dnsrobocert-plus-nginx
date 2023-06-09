@@ -10,9 +10,10 @@ RUN if [ "$ENV" = "rex" ]; then echo "Change depends" \
     ; fi
 
 COPY docker /
+COPY plush /app/plush
 
 RUN \
-    # install depends
+    # install depends ---
     apk add --no-cache --virtual .build-deps build-base libffi-dev \
     # -- for nginx
     && apk add nginx nginx-mod-stream \
@@ -26,11 +27,9 @@ RUN \
     && rm -rf /root/.cache \
     && find /usr/local/lib/python*/ -type f -name '*.py[cod]' -delete \
     && find /usr/local/lib/python*/ -type d -name "__pycache__" -delete \
-    # prepare data path
+    # prepare config/data path ---
     && mkdir /config \
-    && mkdir -p /data/dnsrobocert \
-    && mkdir -p /data/nginx/http.d \
-    && mkdir -p /data/nginx/stream.d
+    && mkdir /data
 
 WORKDIR /app
 

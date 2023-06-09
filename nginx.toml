@@ -1,0 +1,44 @@
+[default]
+ssl_crt_file = "/ssl/ssl.crt"
+ssl_key_file = "/ssl/ssl.key"
+
+[[httpd]]
+server_name = "www.port.error"
+upstream = "http://127.0.0.1:8000"
+
+[[httpd]]
+server_name = "www.http.only"
+listen_http = 8000
+upstream = "http://127.0.0.1:8000"
+
+[[httpd]]
+server_name = "www.https.only"
+listen_https = 4430
+ssl_file = "/ssl/file"
+upstream = "http://127.0.0.1:8000"
+
+[[httpd]]
+server_name = "www.example.com"
+listen_http = 8000
+listen_https = 4430
+upstream = "http://127.0.0.1:8000"
+client_max_body_size = "100m"
+
+[[httpd]]
+server_name = "www.custom.root.location.com"
+listen_https = 4430
+upstream = "http://127.0.0.1:8000"
+location."/" = """
+proxy_pass $upstream;
+"""
+
+[[httpd]]
+server_name = "www.more.location.com"
+listen_https = 4430
+upstream = "http://127.0.0.1:8000"
+location."/" = """
+proxy_pass $upstream;
+"""
+location."/api/verify" = """
+proxy_pass http://127.0.0.1:8888;
+"""
