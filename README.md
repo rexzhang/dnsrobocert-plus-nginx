@@ -1,8 +1,14 @@
-# dnsrobocert-docker
+# dnsrobocert-plus-nginx
 
 [![Docker Pulls](https://img.shields.io/docker/pulls/ray1ex/dnsrobocert)](https://hub.docker.com/repository/docker/ray1ex/dnsrobocert)
 
 [Github repos](https://github.com/rexzhang/dnsrobocert-docker/)
+
+- simple
+- one container
+- none-root user
+- none-SQL
+- for self-hosted
 
 # Quick Start
 
