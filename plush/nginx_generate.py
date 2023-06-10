@@ -146,7 +146,7 @@ class NginxGenerator:
             Path(self.http_d_dir).joinpath(HTTP_D_CONF_FILENAME).as_posix()
         )
         logger.info(f"Generate httpd file:[{http_d_conf_filename}]...")
-        httpd_conf_str = str()
+        httpd_conf_str = ""
         for httpd in self.config.httpd:
             httpd_conf_str += self._generate_one_httpd(httpd)
 
@@ -154,7 +154,7 @@ class NginxGenerator:
             with open(http_d_conf_filename, "w") as f:
                 f.write(httpd_conf_str)
             logger.info(f"Generate httpd file:[{http_d_conf_filename}]...DONE")
-        except IOError as e:
+        except OSError as e:
             logger.critical(f"Generate httpd file:[{http_d_conf_filename}] failed, {e}")
             exit(1)
 
@@ -175,7 +175,7 @@ class NginxGenerator:
         )
 
     def _generate_one_httpd(self, httpd: HTTPD) -> str:
-        httpd_str = str()
+        httpd_str = ""
 
         # httpd ssl
         if not isinstance(httpd.listen_https, int):
@@ -191,7 +191,7 @@ class NginxGenerator:
                 return ""
 
         # httpd location
-        locations_str = str()
+        locations_str = ""
         if "/" not in httpd.location:
             if httpd.client_max_body_size is None:
                 client_max_body_size_str = ""

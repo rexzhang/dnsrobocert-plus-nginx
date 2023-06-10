@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# coding=utf-8
 
 import logging
 
@@ -13,7 +12,7 @@ import sys
 
 def main():
     logging.basicConfig(level=logging.INFO)
-    
+
     try:
         from .cli import main as cli_main
 

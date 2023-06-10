@@ -1,0 +1,3 @@
+-r basic.txt
+
+pre-commit

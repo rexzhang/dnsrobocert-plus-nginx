@@ -11,6 +11,7 @@ RUN if [ "$ENV" = "rex" ]; then echo "Change depends" \
 
 COPY docker /
 COPY plush /app/plush
+COPY requirements /app
 
 RUN \
     # install depends ---
@@ -21,7 +22,7 @@ RUN \
     && chmod 777 -R /var/log/nginx \
     && chmod 777 -R /run/nginx \
     # -- for py
-    && pip install --no-cache-dir -r /app/requirements.txt \
+    && pip install --no-cache-dir -r /app/requirements/docker.txt \
     # cleanup ---
     && apk del .build-deps \
     && rm -rf /root/.cache \
