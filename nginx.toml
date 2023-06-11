@@ -2,43 +2,48 @@
 ssl_crt_file = "/ssl/ssl.crt"
 ssl_key_file = "/ssl/ssl.key"
 
-[[httpd]]
+[[http_d]]
 server_name = "www.port.error"
 upstream = "http://127.0.0.1:8000"
 
-[[httpd]]
+[[http_d]]
 server_name = "www.http.only"
-listen_http = 18000
+listen = 18000
 upstream = "http://127.0.0.1:8000"
 
-[[httpd]]
+[[http_d]]
 server_name = "www.https.only"
-listen_https = 10443
+listen_ssl = 10443
 ssl_file = "/ssl/file"
 upstream = "http://127.0.0.1:8000"
 
-[[httpd]]
+[[http_d]]
 server_name = "www.example.com"
-listen_http = 18000
-listen_https = 10443
+listen = 18000
+listen_ssl = 10443
 upstream = "http://127.0.0.1:8000"
 client_max_body_size = "100m"
 
-[[httpd]]
+[[http_d]]
 server_name = "www.custom.root.location.com"
-listen_https = 10443
+listen_ssl = 10443
 upstream = "http://127.0.0.1:8000"
 location."/" = """
 proxy_pass $upstream;
 """
 
-[[httpd]]
+[[http_d]]
 server_name = "www.more.location.com"
-listen_https = 10443
+listen_ssl = 10443
 upstream = "http://127.0.0.1:8000"
 location."/" = """
 proxy_pass $upstream;
 """
 location."/api/verify" = """
-proxy_pass http://127.0.0.1:8888;
+proxy_pass $upstream;
 """
+
+[[stream_d]]
+comment = "ssh"
+listen = 22
+upstream = "192.168.1.1:22"
