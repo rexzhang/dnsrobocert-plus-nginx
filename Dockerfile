@@ -12,7 +12,7 @@ RUN if [ "$ENV" = "rex" ]; then echo "Change depends" \
 
 COPY docker /
 COPY plush /app/plush
-COPY requirements /app
+COPY requirements /app/requirements
 
 RUN \
     # install depends ---
