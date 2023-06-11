@@ -1,6 +1,7 @@
 #!/bin/sh
 
 # prepare data path
+mkdir -p /data/lexicon_tld_set
 mkdir -p /data/dnsrobocert
 mkdir -p /data/nginx/http.d
 mkdir -p /data/nginx/stream.d
