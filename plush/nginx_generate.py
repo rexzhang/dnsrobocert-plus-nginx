@@ -18,6 +18,10 @@ SNIPPET_PROXY_PARAMS = """
         proxy_set_header X-Forwarded-Proto $scheme;"""
 
 SNIPPET_WEBSOCKET = """
+        # The Upgrade and Connection headers are used to establish
+        # a WebSockets connection.
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
 """
 
 SNIPPET_TEMPLATE_SSL = """
@@ -79,9 +83,10 @@ server {
 
 httpd_template_location_default = """
     location / {
-        $proxy_params
         $client_max_body_size
-
+        $proxy_params
+        $support_websocket
+        
         proxy_pass $$upstream;
     }"""
 
@@ -97,6 +102,7 @@ class Default(pydantic.BaseModel):
 
 
 class HTTPD(pydantic.BaseModel):
+    enable: bool = True
     server_name: str
 
     listen_http: int = None
@@ -108,6 +114,7 @@ class HTTPD(pydantic.BaseModel):
 
     location: dict[str, str] = dict()
     client_max_body_size: str = None
+    support_websocket: bool = False
 
 
 class Config(pydantic.BaseModel):
@@ -148,7 +155,8 @@ class NginxGenerator:
         logger.info(f"Generate httpd file:[{http_d_conf_filename}]...")
         httpd_conf_str = ""
         for httpd in self.config.httpd:
-            httpd_conf_str += self._generate_one_httpd(httpd)
+            if httpd.enable:
+                httpd_conf_str += self._generate_one_httpd(httpd)
 
         try:
             with open(http_d_conf_filename, "w") as f:
@@ -193,6 +201,7 @@ class NginxGenerator:
         # httpd location
         locations_str = ""
         if "/" not in httpd.location:
+            # create from default template
             if httpd.client_max_body_size is None:
                 client_max_body_size_str = ""
             else:
@@ -200,10 +209,16 @@ class NginxGenerator:
                     SNIPPET_TEMPLATE_CLIENT_MAX_BODY_SIZE
                 ).substitute({"client_max_body_size": httpd.client_max_body_size})
 
+            if httpd.support_websocket:
+                support_websocket = SNIPPET_WEBSOCKET
+            else:
+                support_websocket = ""
+
             locations_str += Template(httpd_template_location_default).substitute(
                 {
                     "proxy_params": SNIPPET_PROXY_PARAMS,
                     "client_max_body_size": client_max_body_size_str,
+                    "support_websocket": support_websocket,
                 }
             )
 

@@ -1,17 +1,20 @@
-#!/bin/sh
+#!/bin/zsh
 
-docker container stop dnsrobocert
-docker container rm dnsrobocert
-#docker image rm cr.h.rexzhang.com/ray1ex/dnsrobocert
+docker container stop dnsrobocert-plus-nginx
+docker container rm dnsrobocert-plus-nginx
 
 docker pull python:3.11-alpine
-docker build -t cr.h.rexzhang.com/ray1ex/dnsrobocert . --build-arg ENV=rex
-docker image prune -f
+docker build -t cr.h.rexzhang.com/ray1ex/dnsrobocert-plus-nginx . --build-arg ENV=rex
+read -r -s -k '?Press any key to continue, push docker image...'
+docker push cr.h.rexzhang.com/ray1ex/dnsrobocert-plus-nginx
 
-mkdir /tmp/dnsrobocert-data
+read -r -s -k '?Press any key to continue. startup container...'
+
+mkdir /tmp
 docker run -dit --restart unless-stopped \
-  -u 501:20 -p 8000:8000 -p 443:4430 \
+  -u 501:20 -p 8000:18000 -p 443:10443 \
   -v .:/config \
   -v /tmp:/data \
-  --name dnsrobocert cr.h.rexzhang.com/ray1ex/dnsrobocert
-docker container logs -f dnsrobocert
+  --name dnsrobocert-plus-nginx cr.h.rexzhang.com/ray1ex/dnsrobocert-plus-nginx
+docker image prune -f
+docker container logs -f dnsrobocert-plus-nginx

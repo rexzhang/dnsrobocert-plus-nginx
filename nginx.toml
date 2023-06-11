@@ -8,25 +8,25 @@ upstream = "http://127.0.0.1:8000"
 
 [[httpd]]
 server_name = "www.http.only"
-listen_http = 8000
+listen_http = 18000
 upstream = "http://127.0.0.1:8000"
 
 [[httpd]]
 server_name = "www.https.only"
-listen_https = 4430
+listen_https = 10443
 ssl_file = "/ssl/file"
 upstream = "http://127.0.0.1:8000"
 
 [[httpd]]
 server_name = "www.example.com"
-listen_http = 8000
-listen_https = 4430
+listen_http = 18000
+listen_https = 10443
 upstream = "http://127.0.0.1:8000"
 client_max_body_size = "100m"
 
 [[httpd]]
 server_name = "www.custom.root.location.com"
-listen_https = 4430
+listen_https = 10443
 upstream = "http://127.0.0.1:8000"
 location."/" = """
 proxy_pass $upstream;
@@ -34,7 +34,7 @@ proxy_pass $upstream;
 
 [[httpd]]
 server_name = "www.more.location.com"
-listen_https = 4430
+listen_https = 10443
 upstream = "http://127.0.0.1:8000"
 location."/" = """
 proxy_pass $upstream;
