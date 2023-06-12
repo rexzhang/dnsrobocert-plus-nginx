@@ -218,8 +218,10 @@ class NginxGenerator:
             exit(1)
 
     def _generate_ssl_snippet(self, ssl_crt_file: str, ssl_key_file: str) -> str | None:
-        if ssl_crt_file is None or ssl_key_file is None:
+        if ssl_crt_file is None:
             ssl_crt_file = self.config.default.ssl_crt_file
+
+        if ssl_key_file is None:
             ssl_key_file = self.config.default.ssl_key_file
 
         if ssl_crt_file is None or ssl_key_file is None:
@@ -307,7 +309,7 @@ class NginxGenerator:
 
     def _generate_one_stream_d(self, stream_d: StreamD) -> str:
         stream_d_str = ""
-        if stream_d.listen:
+        if isinstance(stream_d.listen, int):
             stream_d_str += Template(stream_d_template_main_no_ssl).substitute(
                 {
                     "comment": stream_d.comment,
@@ -316,7 +318,7 @@ class NginxGenerator:
                 }
             )
 
-        if stream_d.listen_ssl:
+        if isinstance(stream_d.listen_ssl, int):
             ssl_params_str = self._generate_ssl_snippet(
                 stream_d.ssl_crt_file, stream_d.ssl_key_file
             )
