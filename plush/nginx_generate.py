@@ -42,7 +42,7 @@ server {
     listen [::]:$listen;
     server_name $server_name;
     
-    set $$upstream $upstream;
+    set $$proxy_pass $proxy_pass;
     
     $locations
 }"""
@@ -53,7 +53,7 @@ server {
     listen [::]:$listen_ssl ssl http2;
     server_name $server_name;
 
-    set $$upstream $upstream;
+    set $$proxy_pass $proxy_pass;
 
     $ssl_params
     $locations
@@ -75,7 +75,7 @@ server {
 
     $ssl_params
 
-    set $$upstream $upstream;
+    set $$proxy_pass $proxy_pass;
 
     $locations
 }
@@ -87,7 +87,7 @@ http_d_template_location_default = """
         $proxy_params
         $support_websocket
         
-        proxy_pass $$upstream;
+        proxy_pass $$proxy_pass;
     }"""
 
 http_d_template_location_custom = """
@@ -100,7 +100,7 @@ server {
     # $comment
     listen $listen;
     
-    proxy_pass $upstream;
+    proxy_pass $proxy_pass;
 }"""
 
 stream_d_template_main_only_ssl = """
@@ -111,7 +111,7 @@ server {
     proxy_ssl on;
     $ssl_params
 
-    proxy_pass $upstream;
+    proxy_pass $proxy_pass;
 }"""
 
 
@@ -129,7 +129,7 @@ class ServerAbc(pydantic.BaseModel):
     ssl_crt_file: str = None
     ssl_key_file: str = None
 
-    upstream: str
+    proxy_pass: str
 
 
 class HTTPD(ServerAbc):
@@ -301,7 +301,7 @@ class NginxGenerator:
                 "listen": http_d.listen,
                 "listen_ssl": http_d.listen_ssl,
                 "ssl_params": ssl_params_str,
-                "upstream": http_d.upstream,
+                "proxy_pass": http_d.proxy_pass,
                 "locations": locations_str,
             }
         )
@@ -314,7 +314,7 @@ class NginxGenerator:
                 {
                     "comment": stream_d.comment,
                     "listen": stream_d.listen,
-                    "upstream": stream_d.upstream,
+                    "proxy_pass": stream_d.proxy_pass,
                 }
             )
 
@@ -333,7 +333,7 @@ class NginxGenerator:
                     "comment": stream_d.comment,
                     "listen_ssl": stream_d.listen_ssl,
                     "ssl_params": ssl_params_str,
-                    "upstream": stream_d.upstream,
+                    "proxy_pass": stream_d.proxy_pass,
                 }
             )
         return stream_d_str
