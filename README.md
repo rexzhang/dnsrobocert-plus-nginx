@@ -1,8 +1,8 @@
 # dnsrobocert-plus-nginx
 
-[![Docker Pulls](https://img.shields.io/docker/pulls/ray1ex/dnsrobocert)](https://hub.docker.com/repository/docker/ray1ex/dnsrobocert)
+[![Docker Pulls](https://img.shields.io/docker/pulls/ray1ex/dnsrobocert)](https://hub.docker.com/repository/docker/ray1ex/dnsrobocert-plus-nginx)
 
-[Github repos](https://github.com/rexzhang/dnsrobocert-docker/)
+[Github repos](https://github.com/rexzhang/dnsrobocert-plus-nginx/)
 
 - simple
 - one container
@@ -13,53 +13,48 @@
 # Quick Start
 
 ## Install
+
 ```shell
-docker pull ray1ex/dnsrobocert:latest
+docker pull ray1ex/dnsrobocert-plus-nginx:latest
 docker run -dit --restart unless-stopped \ 
-  -e UID=1000 -e GID=1000 \
-  -v /your/path/config.yml:/etc/dnsrobocert.yml \
+  -u 1000:1000 -p 80:10080 -p 10443 \
+  -v /your/path/config:/config \
   -v /your/path/data:/data \
-  -v /your/path/nginx:/nginx \
-  --name dnsrobocert ray1ex/dnsrobocert
+  --name dnsrobocert-plus-nginx ray1ex/dnsrobocert-plus-nginx
 ```
-
-# Environment Variables
-
-| Name | Defaule Value |
-|------|---------------|
-| GID  | 1000          |
-| UID  | 1000          |
 
 # Deploy Hook Example for Nginx
 
-`config.yml`
+`/your/path/config/dnsrobocert.yml`
+
 ```yaml
 draft: false
 acme:
   email_account: your@email.com
   staging: false
 profiles:
-- name: cloudflare
-  provider: cloudflare
-  provider_options:
-    auth_token: token-token
-  sleep_time: 45
-  max_checks: 5
+  - name: cloudflare
+    provider: cloudflare
+    provider_options:
+      auth_token: token-token
+    sleep_time: 45
+    max_checks: 5
 certificates:
-- domains:
-  - your.domain.com
-  profile: cloudflare
-  deploy_hook: /data/export-to-nginx.sh
+  - domains:
+      - your.domain.com
+    profile: cloudflare
 ```
 
-`/data/export-to-nginx.sh`
-```shell
-#!/bin/sh
+`/your/path/config/nginx.toml`
 
-/bin/cp -f /data/archive/your.domain.com/privkey1.pem /nginx/your.domain.com.key
-/bin/cp -f /data/archive/your.domain.com/fullchain1.pem /nginx/your.domain.com.crt
+```toml
+[[http_d]]
+server_name = "www.example.com"
+listen = 10080
+listen_ssl = 10443
+upstream = "http://172.17.0.1:8000"
 ```
 
 # More Info
+
 - https://github.com/adferrand/dnsrobocert
-- `oci` does not support python3.10
