@@ -1,4 +1,4 @@
-# dnsrobocert-plus-nginx
+# dnsrobocert-plus-nginx[WIP]
 
 [![Docker Pulls](https://img.shields.io/docker/pulls/ray1ex/dnsrobocert-plus-nginx)](https://hub.docker.com/repository/docker/ray1ex/dnsrobocert-plus-nginx)
 
@@ -61,3 +61,9 @@ proxy_pass = "http://172.17.0.1:8000"
 # More Info
 
 - https://github.com/adferrand/dnsrobocert
+
+# debug
+
+```shell
+python -m plush generate --nginx-toml nginx.toml --http-d-dir /tmp --stream-d-dir /tmp
+```
