@@ -10,6 +10,8 @@ logger = getLogger(__name__)
 HTTP_D_CONF_FILENAME = "http.conf"
 STREAM_D_CONF_FILENAME = "stream.conf"
 
+SSL_FILE_BASE_PATH = "/data/dnsrobocert/live"
+
 SNIPPET_PROXY_PARAMS = """
         # proxy_params
         proxy_set_header Host $http_host;
@@ -26,8 +28,8 @@ SNIPPET_WEBSOCKET = """
 
 SNIPPET_TEMPLATE_SSL = """
     # ssl_params
-    ssl_certificate     $ssl_crt_file;
-    ssl_certificate_key $ssl_key_file;
+    ssl_certificate     $SSL_FILE_BASE_PATH/$ssl_cert_domain/fullchain.pem;
+    ssl_certificate_key $SSL_FILE_BASE_PATH/$ssl_cert_domain/privkey.pem;
     ssl_protocols       TLSv1.2 TLSv1.3;
     ssl_ciphers         HIGH:!aNULL:!MD5;"""
 
@@ -116,8 +118,7 @@ server {
 
 
 class Default(pydantic.BaseModel):
-    ssl_crt_file: str
-    ssl_key_file: str
+    ssl_cert_domain: str
 
 
 class ServerAbc(pydantic.BaseModel):
@@ -126,8 +127,7 @@ class ServerAbc(pydantic.BaseModel):
     listen: int = None
     listen_ssl: int = None
 
-    ssl_crt_file: str = None
-    ssl_key_file: str = None
+    ssl_cert_domain: str = None
 
     proxy_pass: str
 
@@ -217,21 +217,18 @@ class NginxGenerator:
             )
             exit(1)
 
-    def _generate_ssl_snippet(self, ssl_crt_file: str, ssl_key_file: str) -> str | None:
-        if ssl_crt_file is None:
-            ssl_crt_file = self.config.default.ssl_crt_file
+    def _generate_ssl_snippet(self, ssl_cert_domain: str) -> str | None:
+        if ssl_cert_domain is None:
+            ssl_cert_domain = self.config.default.ssl_cert_domain
 
-        if ssl_key_file is None:
-            ssl_key_file = self.config.default.ssl_key_file
-
-        if ssl_crt_file is None or ssl_key_file is None:
+        if ssl_cert_domain is None:
             # default is None
             return None
 
         return Template(SNIPPET_TEMPLATE_SSL).substitute(
             {
-                "ssl_crt_file": f"{ssl_crt_file}",
-                "ssl_key_file": f"{ssl_key_file}",
+                "SSL_FILE_BASE_PATH": f"{SSL_FILE_BASE_PATH}",
+                "ssl_cert_domain": f"{ssl_cert_domain}",
             }
         )
 
@@ -242,13 +239,9 @@ class NginxGenerator:
         if not isinstance(http_d.listen_ssl, int):
             ssl_params_str = ""
         else:
-            ssl_params_str = self._generate_ssl_snippet(
-                http_d.ssl_crt_file, http_d.ssl_key_file
-            )
+            ssl_params_str = self._generate_ssl_snippet(http_d.ssl_cert_domain)
             if ssl_params_str is None:
-                logger.error(
-                    f"http.d:[{http_d.server_name}] miss [ssl_crt_file] and [ssl_key_file]"
-                )
+                logger.error(f"http.d:[{http_d.server_name}] miss [ssl_cert_domain]")
                 return ""
 
         # httpd location
@@ -319,13 +312,9 @@ class NginxGenerator:
             )
 
         if isinstance(stream_d.listen_ssl, int):
-            ssl_params_str = self._generate_ssl_snippet(
-                stream_d.ssl_crt_file, stream_d.ssl_key_file
-            )
+            ssl_params_str = self._generate_ssl_snippet(stream_d.ssl_cert_domain)
             if ssl_params_str is None:
-                logger.error(
-                    f"stream.s:[{stream_d.listen_ssl}] miss [ssl_crt_file] and [ssl_key_file]"
-                )
+                logger.error(f"stream.s:[{stream_d.listen_ssl}] miss [ssl_cert_domain]")
                 return ""
 
             stream_d_str += Template(stream_d_template_main_only_ssl).substitute(

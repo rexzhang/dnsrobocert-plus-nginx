@@ -1,6 +1,5 @@
 [default]
-ssl_crt_file = "/ssl/ssl.crt"
-ssl_key_file = "/ssl/ssl.key"
+ssl_cert_domain = "www.example.com"
 
 [[http_d]]
 server_name = "www.port.error"

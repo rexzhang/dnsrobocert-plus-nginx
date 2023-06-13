@@ -48,6 +48,9 @@ certificates:
 `/your/path/config/nginx.toml`
 
 ```toml
+[default]
+ssl_cert_domain = "www.example.com"
+
 [[http_d]]
 server_name = "www.example.com"
 listen = 10080
