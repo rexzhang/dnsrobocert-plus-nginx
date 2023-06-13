@@ -147,7 +147,7 @@ class StreamD(ServerAbc):
 class Config(pydantic.BaseModel):
     default: Default
     http_d: list[HTTPD]
-    stream_d: list[StreamD]
+    stream_d: list[StreamD] = list()
 
 
 class NginxGenerator:
@@ -186,11 +186,18 @@ class NginxGenerator:
         for http_d in self.config.http_d:
             if http_d.enable:
                 http_d_conf_str += self._generate_one_http_d(http_d)
+                logger.info(
+                    f"Generate http.d:[{http_d.proxy_pass}] >> [{http_d.server_name}]"
+                )
+            else:
+                logger.info(
+                    f"Skip http.d:[{http_d.proxy_pass}] >> [{http_d.server_name}]"
+                )
 
         try:
             with open(http_d_conf_filename, "w") as f:
                 f.write(http_d_conf_str)
-            logger.info(f"Generate httpd file:[{http_d_conf_filename}]...DONE")
+            logger.info(f"Generate http.d file:[{http_d_conf_filename}]...DONE")
         except OSError as e:
             logger.critical(
                 f"Generate http.d file:[{http_d_conf_filename}] failed, {e}"
@@ -206,6 +213,9 @@ class NginxGenerator:
         for stream_d in self.config.stream_d:
             if stream_d.enable:
                 stream_d_conf_str += self._generate_one_stream_d(stream_d)
+                logger.info(f"Generate http.d:[{stream_d.proxy_pass}]")
+            else:
+                logger.info(f"Skip http.d:[{stream_d.proxy_pass}]")
 
         try:
             with open(stream_d_conf_filename, "w") as f:

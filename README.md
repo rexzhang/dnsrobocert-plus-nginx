@@ -41,7 +41,8 @@ profiles:
     max_checks: 5
 certificates:
   - domains:
-      - your.domain.com
+      - example.com
+      - "*.example.com"
     profile: cloudflare
 ```
 
@@ -49,13 +50,19 @@ certificates:
 
 ```toml
 [default]
-ssl_cert_domain = "www.example.com"
+ssl_cert_domain = "example.com"
 
 [[http_d]]
 server_name = "www.example.com"
 listen = 10080
 listen_ssl = 10443
 proxy_pass = "http://172.17.0.1:8000"
+
+[[http_d]]
+server_name = "www2.example.com"
+listen = 10080
+listen_ssl = 10443
+proxy_pass = "/mnt/var/www/example.com"
 ```
 
 # More Info
