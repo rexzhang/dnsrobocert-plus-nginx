@@ -44,8 +44,8 @@ server {
     listen [::]:$listen;
     server_name $server_name;
     
-    set $$proxy_pass $proxy_pass;
-    
+    # root_or_proxy_pass
+    $root_or_proxy_pass
     $locations
 }"""
 
@@ -55,9 +55,10 @@ server {
     listen [::]:$listen_ssl ssl http2;
     server_name $server_name;
 
-    set $$proxy_pass $proxy_pass;
-
     $ssl_params
+
+    # root_or_proxy_pass
+    $root_or_proxy_pass
     $locations
 }"""
 
@@ -77,13 +78,16 @@ server {
 
     $ssl_params
 
-    set $$proxy_pass $proxy_pass;
-
+    # root_or_proxy_pass
+    $root_or_proxy_pass
     $locations
 }
 """
-
-http_d_template_location_default = """
+http_d_template_location_default_with_root = """
+    location / {
+    }
+"""
+http_d_template_location_default_with_proxy_pass = """
     location / {
         $client_max_body_size
         $proxy_params
@@ -129,19 +133,22 @@ class ServerAbc(pydantic.BaseModel):
 
     ssl_cert_domain: str = None
 
-    proxy_pass: str
-
 
 class HTTPD(ServerAbc):
     server_name: str
 
+    root: str | None = None
+    proxy_pass: str | None = None
+
     location: dict[str, str] = dict()
-    client_max_body_size: str = None
+    client_max_body_size: str | None = None
     support_websocket: bool = False
 
 
 class StreamD(ServerAbc):
     comment: str = "---"
+
+    proxy_pass: str
 
 
 class Config(pydantic.BaseModel):
@@ -181,55 +188,55 @@ class NginxGenerator:
         http_d_conf_filename = (
             Path(self.http_d_dir).joinpath(HTTP_D_CONF_FILENAME).as_posix()
         )
-        logger.info(f"Generate http.d file:[{http_d_conf_filename}]...")
-        http_d_conf_str = ""
-        for http_d in self.config.http_d:
-            if http_d.enable:
-                http_d_conf_str += self._generate_one_http_d(http_d)
-                logger.info(
-                    f"Generate http.d:[{http_d.proxy_pass}] >> [{http_d.server_name}]"
-                )
-            else:
-                logger.info(
-                    f"Skip http.d:[{http_d.proxy_pass}] >> [{http_d.server_name}]"
-                )
-
-        try:
-            with open(http_d_conf_filename, "w") as f:
-                f.write(http_d_conf_str)
-            logger.info(f"Generate http.d file:[{http_d_conf_filename}]...DONE")
-        except OSError as e:
-            logger.critical(
-                f"Generate http.d file:[{http_d_conf_filename}] failed, {e}"
-            )
-            exit(1)
+        ServerGeneratorHTTPD(
+            default=self.config.default,
+            servers=self.config.http_d,
+            conf_filename=http_d_conf_filename,
+        )()
 
         # stream.d
         stream_d_conf_filename = (
             Path(self.stream_d_dir).joinpath(STREAM_D_CONF_FILENAME).as_posix()
         )
-        logger.info(f"Generate stream.d file:[{stream_d_conf_filename}]...")
-        stream_d_conf_str = ""
-        for stream_d in self.config.stream_d:
-            if stream_d.enable:
-                stream_d_conf_str += self._generate_one_stream_d(stream_d)
-                logger.info(f"Generate http.d:[{stream_d.proxy_pass}]")
-            else:
-                logger.info(f"Skip http.d:[{stream_d.proxy_pass}]")
+        ServerGeneratorStreamD(
+            default=self.config.default,
+            servers=self.config.stream_d,
+            conf_filename=stream_d_conf_filename,
+        )()
+
+
+class ServerGeneratorAbc:
+    def __init__(
+        self, default: Default, servers: list[HTTPD | StreamD], conf_filename: str
+    ):
+        self.default = default
+        self.server = servers
+        self.conf_filename = conf_filename
+
+    def __call__(self, *args, **kwargs) -> str:
+        logger.info(f"Generate [{self.conf_filename}]...")
+
+        conf_str = ""
+
+        for server in self.server:
+            conf_str += self._generate_one_server(server=server)
 
         try:
-            with open(stream_d_conf_filename, "w") as f:
-                f.write(stream_d_conf_str)
-            logger.info(f"Generate stream.d file:[{stream_d_conf_filename}]...DONE")
+            with open(self.conf_filename, "w") as f:
+                f.write(conf_str)
+            logger.info(f"Generate [{self.conf_filename}]...DONE")
         except OSError as e:
-            logger.critical(
-                f"Generate stream.d file:[{stream_d_conf_filename}] failed, {e}"
-            )
+            logger.critical(f"Generate [{self.conf_filename}] failed, {e}")
             exit(1)
+
+        return conf_str
+
+    def _generate_one_server(self, server: HTTPD | StreamD) -> str:
+        raise NotImplementedError
 
     def _generate_ssl_snippet(self, ssl_cert_domain: str) -> str | None:
         if ssl_cert_domain is None:
-            ssl_cert_domain = self.config.default.ssl_cert_domain
+            ssl_cert_domain = self.default.ssl_cert_domain
 
         if ssl_cert_domain is None:
             # default is None
@@ -242,97 +249,138 @@ class NginxGenerator:
             }
         )
 
-    def _generate_one_http_d(self, http_d: HTTPD) -> str:
-        http_d_str = ""
+
+class ServerGeneratorHTTPD(ServerGeneratorAbc):
+    def _generate_one_server(self, server: HTTPD | StreamD) -> str:
+        if not server.enable:
+            logger.info(f"Skip http.d:[{server.proxy_pass}] >> [{server.server_name}]")
+            return ""
 
         # httpd ssl
-        if not isinstance(http_d.listen_ssl, int):
+        if not isinstance(server.listen_ssl, int):
             ssl_params_str = ""
         else:
-            ssl_params_str = self._generate_ssl_snippet(http_d.ssl_cert_domain)
+            ssl_params_str = self._generate_ssl_snippet(server.ssl_cert_domain)
             if ssl_params_str is None:
-                logger.error(f"http.d:[{http_d.server_name}] miss [ssl_cert_domain]")
+                logger.error(f"http.d:[{server.server_name}] miss [ssl_cert_domain]")
                 return ""
 
         # httpd location
         locations_str = ""
-        if "/" not in http_d.location:
+        if "/" not in server.location:
             # create from default template
-            if http_d.client_max_body_size is None:
-                client_max_body_size_str = ""
+            if isinstance(server.root, str):
+                locations_str = self._generate_location_root_with_root()
+            elif isinstance(server.proxy_pass, str):
+                locations_str = self._generate_location_root_with_proxy_pass(server)
             else:
-                client_max_body_size_str = Template(
-                    SNIPPET_TEMPLATE_CLIENT_MAX_BODY_SIZE
-                ).substitute({"client_max_body_size": http_d.client_max_body_size})
+                logger.error(
+                    f"http.d:[{server.server_name}] miss [root] and [proxy_pass]"
+                )
+                return ""
 
-            if http_d.support_websocket:
-                support_websocket = SNIPPET_WEBSOCKET
-            else:
-                support_websocket = ""
-
-            locations_str += Template(http_d_template_location_default).substitute(
-                {
-                    "proxy_params": SNIPPET_PROXY_PARAMS,
-                    "client_max_body_size": client_max_body_size_str,
-                    "support_websocket": support_websocket,
-                }
-            )
-
-        for k, v in http_d.location.items():
+        for k, v in server.location.items():
             locations_str += Template(http_d_template_location_custom).substitute(
                 {"location_path": k, "location_content": v}
             )
 
         # httpd main
-        main_template = None
-        match (isinstance(http_d.listen, int), isinstance(http_d.listen_ssl, int)):
-            case (False, False):
-                logger.error(
-                    f"http.d:[{http_d.server_name}] miss [listen] and [listen_ssl]"
-                )
-                return ""
+        match (
+            isinstance(server.listen, int),
+            isinstance(server.listen_ssl, int),
+        ):
             case (True, False):
                 main_template = Template(http_d_template_main_only_http)
             case (False, True):
                 main_template = Template(http_d_template_main_only_https)
             case (True, True):
                 main_template = Template(http_d_template_main_http_and_https)
+            case _:
+                logger.error(
+                    f"http.d:[{server.server_name}] miss [listen] and [listen_ssl]"
+                )
+                return ""
 
-        http_d_str += main_template.substitute(
+        if server.root:
+            root_or_proxy_pass = f"root {server.root};"
+        elif server.proxy_pass:
+            root_or_proxy_pass = f"set $proxy_pass {server.proxy_pass};"
+        else:
+            logger.error(
+                f"http.d:[{server.server_name}] miss [listen] and [listen_ssl]"
+            )
+            return ""
+
+        result = main_template.substitute(
             {
-                "server_name": http_d.server_name,
-                "listen": http_d.listen,
-                "listen_ssl": http_d.listen_ssl,
+                "server_name": server.server_name,
+                "listen": server.listen,
+                "listen_ssl": server.listen_ssl,
                 "ssl_params": ssl_params_str,
-                "proxy_pass": http_d.proxy_pass,
+                "root_or_proxy_pass": root_or_proxy_pass,
                 "locations": locations_str,
             }
         )
-        return http_d_str
 
-    def _generate_one_stream_d(self, stream_d: StreamD) -> str:
-        stream_d_str = ""
-        if isinstance(stream_d.listen, int):
-            stream_d_str += Template(stream_d_template_main_no_ssl).substitute(
+        logger.info(f"Generate http.d:[{server.proxy_pass}] >> [{server.server_name}]")
+        return result
+
+    @staticmethod
+    def _generate_location_root_with_root() -> str:
+        return ""
+
+    @staticmethod
+    def _generate_location_root_with_proxy_pass(server: HTTPD | StreamD) -> str:
+        if server.client_max_body_size is None:
+            client_max_body_size_str = ""
+        else:
+            client_max_body_size_str = Template(
+                SNIPPET_TEMPLATE_CLIENT_MAX_BODY_SIZE
+            ).substitute({"client_max_body_size": server.client_max_body_size})
+
+        if server.support_websocket:
+            support_websocket = SNIPPET_WEBSOCKET
+        else:
+            support_websocket = ""
+
+        return Template(http_d_template_location_default_with_proxy_pass).substitute(
+            {
+                "proxy_params": SNIPPET_PROXY_PARAMS,
+                "client_max_body_size": client_max_body_size_str,
+                "support_websocket": support_websocket,
+            }
+        )
+
+
+class ServerGeneratorStreamD(ServerGeneratorAbc):
+    def _generate_one_server(self, server: HTTPD | StreamD) -> str:
+        if not server.enable:
+            logger.info(f"Skip stream.d:[{server.proxy_pass}]")
+
+        result = ""
+        if isinstance(server.listen, int):
+            result += Template(stream_d_template_main_no_ssl).substitute(
                 {
-                    "comment": stream_d.comment,
-                    "listen": stream_d.listen,
-                    "proxy_pass": stream_d.proxy_pass,
+                    "comment": server.comment,
+                    "listen": server.listen,
+                    "proxy_pass": server.proxy_pass,
                 }
             )
 
-        if isinstance(stream_d.listen_ssl, int):
-            ssl_params_str = self._generate_ssl_snippet(stream_d.ssl_cert_domain)
+        if isinstance(server.listen_ssl, int):
+            ssl_params_str = self._generate_ssl_snippet(server.ssl_cert_domain)
             if ssl_params_str is None:
-                logger.error(f"stream.s:[{stream_d.listen_ssl}] miss [ssl_cert_domain]")
+                logger.error(f"stream.s:[{server.listen_ssl}] miss [ssl_cert_domain]")
                 return ""
 
-            stream_d_str += Template(stream_d_template_main_only_ssl).substitute(
+            result += Template(stream_d_template_main_only_ssl).substitute(
                 {
-                    "comment": stream_d.comment,
-                    "listen_ssl": stream_d.listen_ssl,
+                    "comment": server.comment,
+                    "listen_ssl": server.listen_ssl,
                     "ssl_params": ssl_params_str,
-                    "proxy_pass": stream_d.proxy_pass,
+                    "proxy_pass": server.proxy_pass,
                 }
             )
-        return stream_d_str
+
+        logger.info(f"Generate stream.d:[{server.proxy_pass}]")
+        return result

@@ -13,7 +13,6 @@ proxy_pass = "http://127.0.0.1:8000"
 [[http_d]]
 server_name = "www.https.only"
 listen_ssl = 10443
-ssl_file = "/ssl/file"
 proxy_pass = "http://127.0.0.1:8000"
 
 [[http_d]]
@@ -41,6 +40,11 @@ proxy_pass $proxy_pass;
 location."/api/verify" = """
 proxy_pass $proxy_pass;
 """
+
+[[http_d]]
+server_name = "www.mapping.root.com"
+listen_ssl = 10443
+root = "/var/www"
 
 [[stream_d]]
 comment = "ssh"
