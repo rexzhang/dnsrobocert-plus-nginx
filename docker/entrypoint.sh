@@ -10,7 +10,7 @@ mkdir -p /data/nginx/stream.d
 python -m plush generate
 
 # start nginx service
-/usr/sbin/nginx -c /nginx/nginx.conf
+/usr/sbin/nginx
 
 # start dnsrobocert service
 /usr/local/bin/dnsrobocert --config /config/dnsrobocert.yml --directory /data/dnsrobocert

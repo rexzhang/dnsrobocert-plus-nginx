@@ -10,7 +10,7 @@ RUN if [ "$ENV" = "rex" ]; then echo "Change depends" \
     && sed -i 's/dl-cdn.alpinelinux.org/mirrors.tuna.tsinghua.edu.cn/g' /etc/apk/repositories \
     ; fi
 
-COPY docker /
+COPY docker/ /app
 COPY plush /app/plush
 COPY requirements /app/requirements
 
@@ -19,6 +19,8 @@ RUN \
     apk add --no-cache --virtual .build-deps build-base libffi-dev \
     # -- for nginx
     && apk add nginx nginx-mod-stream \
+    && mv /etc/nginx/nginx.conf /etc/nginx/nginx.conf.orig \
+    && mv /app/nginx.conf /etc/nginx \
     && chmod 777 -R /var/lib/nginx \
     && chmod 777 -R /var/log/nginx \
     && chmod 777 -R /run/nginx \
