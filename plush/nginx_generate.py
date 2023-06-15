@@ -40,8 +40,7 @@ SNIPPET_TEMPLATE_CLIENT_MAX_BODY_SIZE = """
 
 http_d_template_main_only_http = """
 server {
-    listen $listen;
-    listen [::]:$listen;
+    $listen
     server_name $server_name;
     
     # root_or_proxy_pass
@@ -51,8 +50,7 @@ server {
 
 http_d_template_main_only_https = """
 server {
-    listen $listen_ssl ssl http2;
-    listen [::]:$listen_ssl ssl http2;
+    $listen_ssl
     server_name $server_name;
 
     $ssl_params
@@ -64,16 +62,14 @@ server {
 
 http_d_template_main_http_and_https = """
 server {
-    listen $listen;
-    listen [::]:$listen;
+    $listen
     server_name $server_name;
 
     return 301 https://$server_name$$request_uri;
 }
 
 server {
-    listen $listen_ssl ssl http2;
-    listen [::]:$listen_ssl ssl http2;
+    $listen_ssl
     server_name $server_name;
 
     $ssl_params
@@ -136,6 +132,9 @@ class ServerAbc(pydantic.BaseModel):
 
 class HTTPD(ServerAbc):
     server_name: str
+
+    listen_http2: bool = True
+    listen_ipv6: bool = True
 
     root: str | None = None
     proxy_pass: str | None = None
@@ -311,6 +310,26 @@ class ServerGeneratorHTTPD(ServerGeneratorAbc):
                 logger.error(f"{self._id_str(server)} miss [listen] and [listen_ssl]")
                 return ""
 
+        match server.listen_http2, server.listen_ipv6:
+            case True, True:
+                listen = f"listen {server.listen}; listen [::]:{server.listen};"
+                listen_ssl = f"listen {server.listen_ssl} ssl http2; listen [::]:{server.listen_ssl} ssl http2;"
+
+            case True, False:
+                listen = f"listen {server.listen};"
+                listen_ssl = f"listen {server.listen_ssl} ssl http2;"
+
+            case False, True:
+                listen = f"listen {server.listen}; listen [::]:{server.listen};"
+                listen_ssl = f"listen {server.listen_ssl} ssl; listen [::]:{server.listen_ssl} ssl;"
+
+            case False, False:
+                listen = f"listen {server.listen};"
+                listen_ssl = f"listen {server.listen_ssl} ssl;"
+
+            case _:
+                raise
+
         if server.root:
             root_or_proxy_pass = f"root {server.root};"
         elif server.proxy_pass:
@@ -322,8 +341,8 @@ class ServerGeneratorHTTPD(ServerGeneratorAbc):
         result = main_template.substitute(
             {
                 "server_name": server.server_name,
-                "listen": server.listen,
-                "listen_ssl": server.listen_ssl,
+                "listen": listen,
+                "listen_ssl": listen_ssl,
                 "ssl_params": ssl_params_str,
                 "root_or_proxy_pass": root_or_proxy_pass,
                 "locations": locations_str,
@@ -331,7 +350,7 @@ class ServerGeneratorHTTPD(ServerGeneratorAbc):
         )
 
         logger.info(f"Generate {self._id_str(server)}")
-        return result  # TODO proxy_pass !!
+        return result
 
     @staticmethod
     def _generate_location_root_with_root() -> str:
