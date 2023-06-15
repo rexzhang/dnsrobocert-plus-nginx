@@ -231,6 +231,10 @@ class ServerGeneratorAbc:
 
         return conf_str
 
+    @staticmethod
+    def _id_str(server: HTTPD | StreamD) -> str:
+        raise NotImplementedError
+
     def _generate_one_server(self, server: HTTPD | StreamD) -> str:
         raise NotImplementedError
 
@@ -251,10 +255,20 @@ class ServerGeneratorAbc:
 
 
 class ServerGeneratorHTTPD(ServerGeneratorAbc):
+    @staticmethod
+    def _id_str(server: HTTPD | StreamD) -> str:
+        match server.server_name is None, server.root is None, server.proxy_pass is None:
+            case False, False, True:
+                return f"http.d: [{server.root}] >> [{server.server_name}]"
+            case False, True, False:
+                return f"http.d: [{server.proxy_pass}] >> [{server.server_name}]"
+
+        return "?"
+
     def _generate_one_server(self, server: HTTPD | StreamD) -> str:
         if not server.enable:
-            logger.info(f"Skip http.d:[{server.proxy_pass}] >> [{server.server_name}]")
-            return ""
+            logger.info(f"Skip {self._id_str(server)}")
+            return ""  # TODO
 
         # httpd ssl
         if not isinstance(server.listen_ssl, int):
@@ -262,7 +276,7 @@ class ServerGeneratorHTTPD(ServerGeneratorAbc):
         else:
             ssl_params_str = self._generate_ssl_snippet(server.ssl_cert_domain)
             if ssl_params_str is None:
-                logger.error(f"http.d:[{server.server_name}] miss [ssl_cert_domain]")
+                logger.error(f"{self._id_str(server)} miss [ssl_cert_domain]")
                 return ""
 
         # httpd location
@@ -274,9 +288,7 @@ class ServerGeneratorHTTPD(ServerGeneratorAbc):
             elif isinstance(server.proxy_pass, str):
                 locations_str = self._generate_location_root_with_proxy_pass(server)
             else:
-                logger.error(
-                    f"http.d:[{server.server_name}] miss [root] and [proxy_pass]"
-                )
+                logger.error(f"{self._id_str(server)} miss [root] and [proxy_pass]")
                 return ""
 
         for k, v in server.location.items():
@@ -296,9 +308,7 @@ class ServerGeneratorHTTPD(ServerGeneratorAbc):
             case (True, True):
                 main_template = Template(http_d_template_main_http_and_https)
             case _:
-                logger.error(
-                    f"http.d:[{server.server_name}] miss [listen] and [listen_ssl]"
-                )
+                logger.error(f"{self._id_str(server)} miss [listen] and [listen_ssl]")
                 return ""
 
         if server.root:
@@ -306,9 +316,7 @@ class ServerGeneratorHTTPD(ServerGeneratorAbc):
         elif server.proxy_pass:
             root_or_proxy_pass = f"set $proxy_pass {server.proxy_pass};"
         else:
-            logger.error(
-                f"http.d:[{server.server_name}] miss [listen] and [listen_ssl]"
-            )
+            logger.error(f"{self._id_str(server)} miss [listen] and [listen_ssl]")
             return ""
 
         result = main_template.substitute(
@@ -322,8 +330,8 @@ class ServerGeneratorHTTPD(ServerGeneratorAbc):
             }
         )
 
-        logger.info(f"Generate http.d:[{server.proxy_pass}] >> [{server.server_name}]")
-        return result
+        logger.info(f"Generate {self._id_str(server)}")
+        return result  # TODO proxy_pass !!
 
     @staticmethod
     def _generate_location_root_with_root() -> str:
@@ -353,9 +361,13 @@ class ServerGeneratorHTTPD(ServerGeneratorAbc):
 
 
 class ServerGeneratorStreamD(ServerGeneratorAbc):
+    @staticmethod
+    def _id_str(server: HTTPD | StreamD) -> str:
+        return f"stream.d:[{server.proxy_pass}]"
+
     def _generate_one_server(self, server: HTTPD | StreamD) -> str:
         if not server.enable:
-            logger.info(f"Skip stream.d:[{server.proxy_pass}]")
+            logger.info(f"Skip {self._id_str(server)}")
 
         result = ""
         if isinstance(server.listen, int):
@@ -370,7 +382,7 @@ class ServerGeneratorStreamD(ServerGeneratorAbc):
         if isinstance(server.listen_ssl, int):
             ssl_params_str = self._generate_ssl_snippet(server.ssl_cert_domain)
             if ssl_params_str is None:
-                logger.error(f"stream.s:[{server.listen_ssl}] miss [ssl_cert_domain]")
+                logger.error(f"{self._id_str(server)} miss [ssl_cert_domain]")
                 return ""
 
             result += Template(stream_d_template_main_only_ssl).substitute(
@@ -382,5 +394,5 @@ class ServerGeneratorStreamD(ServerGeneratorAbc):
                 }
             )
 
-        logger.info(f"Generate stream.d:[{server.proxy_pass}]")
+        logger.info(f"Generate {self._id_str(server)}")
         return result
