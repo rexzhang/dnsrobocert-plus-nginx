@@ -2,6 +2,7 @@ FROM python:3.11-alpine
 
 ARG ENV
 ENV TZ="Asia/Shanghai"
+ENV DEPLOY_HOOK="/app/nginx_restart.sh"
 ENV TLDEXTRACT_CACHE_PATH=/data/lexicon_tld_set
 
 RUN if [ "$ENV" = "rex" ]; then echo "Change depends" \

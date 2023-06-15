@@ -45,7 +45,6 @@ certificates:
       - example.com
       - "*.example.com"
     profile: cloudflare
-    deploy_hook: nginx -s reload
 ```
 
 Ref：
