@@ -2,7 +2,7 @@
 
 [![Docker Pulls](https://img.shields.io/docker/pulls/ray1ex/dnsrobocert-plus-nginx)](https://hub.docker.com/repository/docker/ray1ex/dnsrobocert-plus-nginx)
 
-[Github repos](https://github.com/rexzhang/dnsrobocert-plus-nginx/)
+[GitHub repos](https://github.com/rexzhang/dnsrobocert-plus-nginx/)
 
 - simple
 - one container
@@ -26,7 +26,7 @@ docker run -dit --restart unless-stopped \
 
 # Config Example
 
-`/your/path/config/dnsrobocert.yml`
+## `/your/path/config/dnsrobocert.yml`
 
 ```yaml
 draft: false
@@ -48,7 +48,12 @@ certificates:
     deploy_hook: nginx -s reload
 ```
 
-`/your/path/config/nginx.toml`
+Ref：
+
+- [DNSroboCert’s provider options page](https://dnsrobocert.readthedocs.io/en/latest/configuration_reference.html)
+- [Lexicon’s provider options page](https://dns-lexicon.readthedocs.io/en/latest/providers_options.html)
+
+## `/your/path/config/nginx.toml`
 
 ```toml
 [default]
