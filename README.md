@@ -62,7 +62,7 @@ proxy_pass = "http://172.17.0.1:8000"
 server_name = "www2.example.com"
 listen = 10080
 listen_ssl = 10443
-root = "root /mnt/www/www.example.com"
+root = "root /mnt/www/www2.example.com"
 ```
 
 # More Info

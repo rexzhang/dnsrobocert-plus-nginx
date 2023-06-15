@@ -33,11 +33,13 @@ RUN \
     && find /usr/local/lib/python*/ -type d -name "__pycache__" -delete \
     # prepare config/data path ---
     && mkdir /config \
-    && mkdir /data
+    && mkdir /data \
+    && mkdir /log
 
 WORKDIR /app
 
 VOLUME /config
 VOLUME /data
+VOLUME /log
 
 CMD /app/entrypoint.sh
