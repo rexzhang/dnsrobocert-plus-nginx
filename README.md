@@ -20,6 +20,7 @@ docker run -dit --restart unless-stopped \
   -u 1000:1000 -p 80:10080 -p 443:10443 \
   -v /your/path/config:/config \
   -v /your/path/data:/data \
+  -v /your/path/log:/log \
   --name dnsrobocert-plus-nginx ray1ex/dnsrobocert-plus-nginx
 ```
 
@@ -44,6 +45,7 @@ certificates:
       - example.com
       - "*.example.com"
     profile: cloudflare
+    deploy_hook: nginx -s reload
 ```
 
 `/your/path/config/nginx.toml`
