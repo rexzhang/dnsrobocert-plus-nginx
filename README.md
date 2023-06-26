@@ -20,7 +20,7 @@ docker run -dit --restart unless-stopped \
   -u 1000:1000 -p 80:10080 -p 443:10443 \
   -v /your/path/config:/config \
   -v /your/path/data:/data \
-  -v /your/path/log:/log \
+  -v /your/path/logs:/logs \
   --name dnsrobocert-plus-nginx ray1ex/dnsrobocert-plus-nginx
 ```
 

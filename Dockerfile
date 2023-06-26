@@ -23,7 +23,7 @@ RUN \
     && mv /etc/nginx/nginx.conf /etc/nginx/nginx.conf.orig \
     && mv /app/nginx.conf /etc/nginx \
     && chmod 777 -R /var/lib/nginx \
-    && chmod 777 -R /var/logs/nginx \
+    ## && chmod 777 -R /var/log/nginx \
     && chmod 777 -R /run/nginx \
     # -- for py
     && pip install --no-cache-dir -r /app/requirements/docker.txt \
@@ -35,7 +35,7 @@ RUN \
     # prepare config/data path ---
     && mkdir /config \
     && mkdir /data \
-    && mkdir /log
+    && mkdir /logs
 
 WORKDIR /app
 
