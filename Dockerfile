@@ -23,7 +23,7 @@ RUN \
     && mv /etc/nginx/nginx.conf /etc/nginx/nginx.conf.orig \
     && mv /app/nginx.conf /etc/nginx \
     && chmod 777 -R /var/lib/nginx \
-    && chmod 777 -R /var/log/nginx \
+    && chmod 777 -R /var/logs/nginx \
     && chmod 777 -R /run/nginx \
     # -- for py
     && pip install --no-cache-dir -r /app/requirements/docker.txt \
@@ -41,6 +41,6 @@ WORKDIR /app
 
 VOLUME /config
 VOLUME /data
-VOLUME /log
+VOLUME /logs
 
 CMD /app/entrypoint.sh

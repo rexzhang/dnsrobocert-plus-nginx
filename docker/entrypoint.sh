@@ -5,7 +5,8 @@ mkdir -p /data/lexicon_tld_set
 mkdir -p /data/dnsrobocert
 mkdir -p /data/nginx/http.d
 mkdir -p /data/nginx/stream.d
-mkdir -p /log/nginx
+mkdir -p /logs/dnsrobocert
+mkdir -p /logs/nginx
 
 # generate nginx *.conf file
 python -m plush generate
