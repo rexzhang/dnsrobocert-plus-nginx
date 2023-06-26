@@ -12,7 +12,7 @@ mkdir -p /logs/nginx
 python -m plush generate
 
 # start nginx service
-/usr/sbin/nginx
+/usr/sbin/nginx -e /logs/nginx/error.log
 
 # start dnsrobocert service
 /usr/local/bin/dnsrobocert --config /config/dnsrobocert.yml --directory /data/dnsrobocert
