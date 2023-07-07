@@ -1,7 +1,6 @@
 FROM python:3.11-alpine
 
 ARG ENV
-ENV TZ="Asia/Shanghai"
 ENV DEPLOY_HOOK="/app/nginx_restart.sh"
 ENV TLDEXTRACT_CACHE_PATH=/data/lexicon_tld_set
 
@@ -21,7 +20,7 @@ RUN \
     # -- for nginx
     && apk add nginx nginx-mod-stream \
     && mv /etc/nginx/nginx.conf /etc/nginx/nginx.conf.orig \
-    && mv /app/nginx.conf /etc/nginx \
+    && mv /app/nginx/nginx.conf /etc/nginx \
     && chmod 777 -R /var/lib/nginx \
     ## && chmod 777 -R /var/log/nginx \
     && chmod 777 -R /run/nginx \

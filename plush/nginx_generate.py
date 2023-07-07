@@ -27,11 +27,12 @@ SNIPPET_WEBSOCKET = """
 """
 
 SNIPPET_TEMPLATE_SSL = """
-    # ssl_params
-    ssl_certificate     $SSL_FILE_BASE_PATH/$ssl_cert_domain/fullchain.pem;
-    ssl_certificate_key $SSL_FILE_BASE_PATH/$ssl_cert_domain/privkey.pem;
-    ssl_protocols       TLSv1.2 TLSv1.3;
-    ssl_ciphers         HIGH:!aNULL:!MD5;"""
+# ssl_params
+ssl_certificate     $SSL_FILE_BASE_PATH/$ssl_cert_domain/fullchain.pem;
+ssl_certificate_key $SSL_FILE_BASE_PATH/$ssl_cert_domain/privkey.pem;
+
+#ssl_trusted_certificate $SSL_FILE_BASE_PATH/$ssl_cert_domain/chain.pem;
+include /app/nginx/snippets/ssl-params.conf;"""
 
 SNIPPET_TEMPLATE_CLIENT_MAX_BODY_SIZE = """
         # Fix: 413 - Request Entity Too Large
