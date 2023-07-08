@@ -71,6 +71,12 @@ listen_ssl = 10443
 root = "root /mnt/www/www2.example.com"
 ```
 
+# FAQ
+
+## Why is `listen_http = false` set, NGINX is still response http2
+
+Please `http2` turn off all services under the same port, which is a feature of NGINX.
+
 # More Info
 
 - https://github.com/adferrand/dnsrobocert
@@ -80,3 +86,8 @@ root = "root /mnt/www/www2.example.com"
 ```shell
 python -m plush generate --nginx-toml nginx.toml --http-d-dir /tmp --stream-d-dir /tmp
 ```
+
+# TODO
+
+- 统一日志输出
+- 自动重新装载nginx

@@ -46,6 +46,12 @@ server_name = "www.mapping.root.com"
 listen_ssl = 10443
 root = "/var/www"
 
+[[http_d]]
+server_name = "www.disable.http2.com"
+listen_ssl = 10443
+listen_http2 = false
+root = "/var/www"
+
 [[stream_d]]
 comment = "ssh"
 listen = 22
