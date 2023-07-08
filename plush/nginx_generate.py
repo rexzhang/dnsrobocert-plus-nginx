@@ -162,8 +162,8 @@ class NginxGenerator:
             exit(1)
 
         try:
-            self.config = pydantic.parse_obj_as(Config, config_obj)
-        except pydantic.error_wrappers.ValidationError as e:
+            self.config = Config.model_validate(config_obj)
+        except pydantic.ValidationError as e:
             logger.critical(f"Parse file {nginx_toml} failed, {e}")
             exit(1)
 

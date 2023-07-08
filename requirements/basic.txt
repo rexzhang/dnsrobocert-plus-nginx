@@ -1,4 +1,4 @@
 dnsrobocert==3.23.1
 
 click
-pydantic
+pydantic>=2.0.0
