@@ -12,20 +12,6 @@ STREAM_D_CONF_FILENAME = "stream.conf"
 
 SSL_FILE_BASE_PATH = "/data/dnsrobocert/live"
 
-SNIPPET_PROXY_PARAMS = """
-        # proxy_params
-        proxy_set_header Host $http_host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;"""
-
-SNIPPET_WEBSOCKET = """
-        # The Upgrade and Connection headers are used to establish
-        # a WebSockets connection.
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection "upgrade";
-"""
-
 SNIPPET_TEMPLATE_SSL = """
 # ssl_params
 ssl_certificate     $SSL_FILE_BASE_PATH/$ssl_cert_domain/fullchain.pem;
@@ -87,8 +73,9 @@ http_d_template_location_default_with_root = """
 http_d_template_location_default_with_proxy_pass = """
     location / {
         $client_max_body_size
-        $proxy_params
-        $support_websocket
+        
+        include /app/nginx/snippets/proxy-params.conf;
+        $include_websocket
         
         proxy_pass $$proxy_pass;
     }"""
@@ -367,15 +354,14 @@ class ServerGeneratorHTTPD(ServerGeneratorAbc):
             ).substitute({"client_max_body_size": server.client_max_body_size})
 
         if server.support_websocket:
-            support_websocket = SNIPPET_WEBSOCKET
+            include_websocket = "include /app/nginx/snippets/websocket.conf;"
         else:
-            support_websocket = ""
+            include_websocket = ""
 
         return Template(http_d_template_location_default_with_proxy_pass).substitute(
             {
-                "proxy_params": SNIPPET_PROXY_PARAMS,
                 "client_max_body_size": client_max_body_size_str,
-                "support_websocket": support_websocket,
+                "include_websocket": include_websocket,
             }
         )
 
