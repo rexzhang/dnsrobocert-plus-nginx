@@ -2,80 +2,68 @@ import tomllib
 from logging import getLogger
 from pathlib import Path
 from string import Template
-
+import builtins
 import pydantic
 
 logger = getLogger(__name__)
 
-HTTP_D_CONF_FILENAME = "http.conf"
-STREAM_D_CONF_FILENAME = "stream.conf"
+CONF_FILENAME_HTTP_D = "http.conf"
+CONF_FILENAME_STREAM_D = "stream.conf"
 
 SSL_FILE_BASE_PATH = "/data/dnsrobocert/live"
 
-SNIPPET_TEMPLATE_SSL = """
-# ssl_params
-ssl_certificate     $SSL_FILE_BASE_PATH/$ssl_cert_domain/fullchain.pem;
-ssl_certificate_key $SSL_FILE_BASE_PATH/$ssl_cert_domain/privkey.pem;
-
-#ssl_trusted_certificate $SSL_FILE_BASE_PATH/$ssl_cert_domain/chain.pem;
-include /app/nginx/snippets/ssl-params.conf;"""
-
-SNIPPET_TEMPLATE_CLIENT_MAX_BODY_SIZE = """
-        # Fix: 413 - Request Entity Too Large
-        client_max_body_size $client_max_body_size;
-"""
-
 http_d_template_main_only_http = """
 server {
-    $listen
     server_name $server_name;
+    $listen
     
-    # root_or_proxy_pass
-    $root_or_proxy_pass
+    $values
     $locations
-}"""
+}
+"""
 
 http_d_template_main_only_https = """
 server {
-    $listen_ssl
     server_name $server_name;
-
-    $ssl_params
-
-    # root_or_proxy_pass
-    $root_or_proxy_pass
+    $listen_ssl
+    
+    $values
+    $ssl_params_include
     $locations
-}"""
+}
+"""
 
 http_d_template_main_http_and_https = """
 server {
-    $listen
     server_name $server_name;
-
+    $listen
+    
     return 301 https://$server_name$$request_uri;
 }
 
 server {
     $listen_ssl
     server_name $server_name;
+    
+    $values
 
-    $ssl_params
+    proxy_buffering off; ## Sends data as fast as it can not buffering large chunks.
 
-    # root_or_proxy_pass
-    $root_or_proxy_pass
+    $ssl_params_include
     $locations
 }
 """
-http_d_template_location_default_with_root = """
+
+http_d_template_location_root_with_root_path = """
     location / {
-    }
-"""
-http_d_template_location_default_with_proxy_pass = """
+        root $$root_path;
+    }"""
+
+http_d_template_location_root_with_proxy_pass = """
     location / {
-        $client_max_body_size
-        
         include /app/nginx/snippets/proxy-params.conf;
         $include_websocket
+        $include_client_max_body_size
         
         proxy_pass $$proxy_pass;
     }"""
@@ -90,19 +78,25 @@ server {
     # $comment
     listen $listen;
     
-    proxy_pass $proxy_pass;
-}"""
+    $values    
+    
+    proxy_pass $$proxy_pass;
+}
+"""
 
 stream_d_template_main_only_ssl = """
 server {
     # $comment
     listen $listen_ssl ssl;
+    
+    $values
 
     proxy_ssl on;
-    $ssl_params
+    $ssl_params_include
 
-    proxy_pass $proxy_pass;
-}"""
+    proxy_pass $$proxy_pass;
+}
+"""
 
 
 class Default(pydantic.BaseModel):
@@ -124,7 +118,7 @@ class HTTPD(ServerAbc):
     listen_http2: bool = True
     listen_ipv6: bool = True
 
-    root: str | None = None
+    root_path: str | None = None
     proxy_pass: str | None = None
 
     location: dict[str, str] = dict()
@@ -142,54 +136,6 @@ class Config(pydantic.BaseModel):
     default: Default
     http_d: list[HTTPD]
     stream_d: list[StreamD] = list()
-
-
-class NginxGenerator:
-    config: Config
-    http_d_dir: str
-    stream_d_dir: str
-
-    def __init__(self, nginx_toml: str, http_d_dir: str, stream_d_dir: str):
-        try:
-            with open(nginx_toml, "rb") as f:
-                config_obj = tomllib.load(f)
-
-        except FileNotFoundError as e:
-            logger.critical(f"Open file {nginx_toml} failed, {e}")
-            exit(1)
-        except tomllib.TOMLDecodeError as e:
-            logger.critical(f"Parse file {nginx_toml} failed, {e}")
-            exit(1)
-
-        try:
-            self.config = Config.model_validate(config_obj)
-        except pydantic.ValidationError as e:
-            logger.critical(f"Parse file {nginx_toml} failed, {e}")
-            exit(1)
-
-        self.http_d_dir = http_d_dir
-        self.stream_d_dir = stream_d_dir
-
-    def __call__(self, *args, **kwargs):
-        # http.d
-        http_d_conf_filename = (
-            Path(self.http_d_dir).joinpath(HTTP_D_CONF_FILENAME).as_posix()
-        )
-        ServerGeneratorHTTPD(
-            default=self.config.default,
-            servers=self.config.http_d,
-            conf_filename=http_d_conf_filename,
-        )()
-
-        # stream.d
-        stream_d_conf_filename = (
-            Path(self.stream_d_dir).joinpath(STREAM_D_CONF_FILENAME).as_posix()
-        )
-        ServerGeneratorStreamD(
-            default=self.config.default,
-            servers=self.config.stream_d,
-            conf_filename=stream_d_conf_filename,
-        )()
 
 
 class ServerGeneratorAbc:
@@ -218,75 +164,110 @@ class ServerGeneratorAbc:
 
         return conf_str
 
-    @staticmethod
-    def _id_str(server: HTTPD | StreamD) -> str:
-        raise NotImplementedError
-
     def _generate_one_server(self, server: HTTPD | StreamD) -> str:
         raise NotImplementedError
 
-    def _generate_ssl_snippet(self, ssl_cert_domain: str) -> str | None:
-        if ssl_cert_domain is None:
+
+class GenerateOneServerAbc:
+    _values: dict = dict()
+
+    def __init__(self, server: HTTPD | StreamD, default: Default):
+        self.server = server
+        self.default = default
+
+        if server.proxy_pass:
+            self.update_value(k="proxy_pass", v=server.proxy_pass)
+
+    def __call__(self, *args, **kwargs) -> str:
+        if not self.server.enable:
+            logger.info(f"Skip {self.id_str()}")
+            return ""
+
+        result = self.generate()
+        if result:
+            logger.info(f"Generate {self.id_str()}")
+            return result
+
+        else:
+            # TODO
+            return ""
+
+    def update_value(self, k, v):
+        self._values[k] = v
+
+    def generate_values_list_str(self) -> str:
+        result = "# values list\n"
+        for k, v in self._values.items():
+            match type(v):
+                case builtins.str:
+                    result += f'    set ${k} "{v}";\n'
+                case builtins.int:
+                    result += f"    set ${k} {v};\n"
+                case _:
+                    raise
+        return result
+
+    def generate_ssl_params_include(self) -> str:
+        if self.server.ssl_cert_domain is None:
             ssl_cert_domain = self.default.ssl_cert_domain
+        else:
+            ssl_cert_domain = self.server.ssl_cert_domain
 
         if ssl_cert_domain is None:
             # default is None
-            return None
+            return ""
 
-        return Template(SNIPPET_TEMPLATE_SSL).substitute(
-            {
-                "SSL_FILE_BASE_PATH": f"{SSL_FILE_BASE_PATH}",
-                "ssl_cert_domain": f"{ssl_cert_domain}",
-            }
+        self.update_value(
+            k="ssl_path_root", v=f"{SSL_FILE_BASE_PATH}/{ssl_cert_domain}"
         )
+        return "include /app/nginx/snippets/ssl-params.conf"
 
-
-class ServerGeneratorHTTPD(ServerGeneratorAbc):
     @staticmethod
-    def _id_str(server: HTTPD | StreamD) -> str:
-        match server.server_name is None, server.root is None, server.proxy_pass is None:
+    def id_str() -> str:
+        raise NotImplementedError
+
+    def generate(self) -> str:
+        raise NotImplementedError
+
+
+class GenerateOneServerHTTPD(GenerateOneServerAbc):
+    def id_str(self) -> str:
+        match self.server.server_name is None, self.server.root_path is None, self.server.proxy_pass is None:
             case False, False, True:
-                return f"http.d: [{server.root}] >> [{server.server_name}]"
+                return (
+                    f"http.d: [{self.server.root_path}] >> [{self.server.server_name}]"
+                )
             case False, True, False:
-                return f"http.d: [{server.proxy_pass}] >> [{server.server_name}]"
+                return (
+                    f"http.d: [{self.server.proxy_pass}] >> [{self.server.server_name}]"
+                )
 
         return "?"
 
-    def _generate_one_server(self, server: HTTPD | StreamD) -> str:
-        if not server.enable:
-            logger.info(f"Skip {self._id_str(server)}")
-            return ""  # TODO
-
-        # httpd ssl
-        if not isinstance(server.listen_ssl, int):
-            ssl_params_str = ""
-        else:
-            ssl_params_str = self._generate_ssl_snippet(server.ssl_cert_domain)
-            if ssl_params_str is None:
-                logger.error(f"{self._id_str(server)} miss [ssl_cert_domain]")
-                return ""
-
+    def generate(self) -> str:
         # httpd location
         locations_str = ""
-        if "/" not in server.location:
+        if "/" not in self.server.location:
             # create from default template
-            if isinstance(server.root, str):
+            if isinstance(self.server.root_path, str):
+                self.update_value(k="root_path", v=self.server.root_path)
                 locations_str = self._generate_location_root_with_root()
-            elif isinstance(server.proxy_pass, str):
-                locations_str = self._generate_location_root_with_proxy_pass(server)
+            elif isinstance(self.server.proxy_pass, str):
+                self.update_value(k="proxy_pass", v=self.server.proxy_pass)
+                locations_str = self._generate_location_root_with_proxy_pass()
             else:
-                logger.error(f"{self._id_str(server)} miss [root] and [proxy_pass]")
+                logger.error(f"{self.id_str()} miss [root_path] and [proxy_pass]")
                 return ""
 
-        for k, v in server.location.items():
+        for k, v in self.server.location.items():
             locations_str += Template(http_d_template_location_custom).substitute(
                 {"location_path": k, "location_content": v}
             )
 
         # httpd main
         match (
-            isinstance(server.listen, int),
-            isinstance(server.listen_ssl, int),
+            isinstance(self.server.listen, int),
+            isinstance(self.server.listen_ssl, int),
         ):
             case (True, False):
                 main_template = Template(http_d_template_main_only_http)
@@ -295,110 +276,175 @@ class ServerGeneratorHTTPD(ServerGeneratorAbc):
             case (True, True):
                 main_template = Template(http_d_template_main_http_and_https)
             case _:
-                logger.error(f"{self._id_str(server)} miss [listen] and [listen_ssl]")
+                logger.error(f"{self.id_str()} miss [listen] and [listen_ssl]")
                 return ""
 
-        match server.listen_http2, server.listen_ipv6:
+        match self.server.listen_http2, self.server.listen_ipv6:
             case True, True:
-                listen = f"listen {server.listen}; listen [::]:{server.listen};"
-                listen_ssl = f"listen {server.listen_ssl} ssl http2; listen [::]:{server.listen_ssl} ssl http2;"
+                listen = (
+                    f"listen {self.server.listen}; listen [::]:{self.server.listen};"
+                )
+                listen_ssl = f"listen {self.server.listen_ssl} ssl http2; listen [::]:{self.server.listen_ssl} ssl http2;"
 
             case True, False:
-                listen = f"listen {server.listen};"
-                listen_ssl = f"listen {server.listen_ssl} ssl http2;"
+                listen = f"listen {self.server.listen};"
+                listen_ssl = f"listen {self.server.listen_ssl} ssl http2;"
 
             case False, True:
-                listen = f"listen {server.listen}; listen [::]:{server.listen};"
-                listen_ssl = f"listen {server.listen_ssl} ssl; listen [::]:{server.listen_ssl} ssl;"
+                listen = (
+                    f"listen {self.server.listen}; listen [::]:{self.server.listen};"
+                )
+                listen_ssl = f"listen {self.server.listen_ssl} ssl; listen [::]:{self.server.listen_ssl} ssl;"
 
             case False, False:
-                listen = f"listen {server.listen};"
-                listen_ssl = f"listen {server.listen_ssl} ssl;"
+                listen = f"listen {self.server.listen};"
+                listen_ssl = f"listen {self.server.listen_ssl} ssl;"
 
             case _:
                 raise
 
-        if server.root:
-            root_or_proxy_pass = f"root {server.root};"
-        elif server.proxy_pass:
-            root_or_proxy_pass = f"set $proxy_pass {server.proxy_pass};"
-        else:
-            logger.error(f"{self._id_str(server)} miss [listen] and [listen_ssl]")
-            return ""
+        # if self.server.root_path:
+        #     root_or_proxy_pass = f"root_path {self.server.root_path};"
+        # elif self.server.proxy_pass:
+        #     root_or_proxy_pass = f"set $proxy_pass {self.server.proxy_pass};"
+        # else:
+        #     logger.error(f"{self.id_str()} miss [listen] and [listen_ssl]")
+        #     return ""
 
         result = main_template.substitute(
             {
-                "server_name": server.server_name,
+                "values": self.generate_values_list_str(),
+                "server_name": self.server.server_name,
                 "listen": listen,
                 "listen_ssl": listen_ssl,
-                "ssl_params": ssl_params_str,
-                "root_or_proxy_pass": root_or_proxy_pass,
+                "ssl_params_include": self.generate_ssl_params_include(),
+                # "root_or_proxy_pass": root_or_proxy_pass,
                 "locations": locations_str,
             }
         )
 
-        logger.info(f"Generate {self._id_str(server)}")
         return result
 
-    @staticmethod
-    def _generate_location_root_with_root() -> str:
-        return ""
+    def _generate_location_root_with_root(self) -> str:
+        return Template(http_d_template_location_root_with_root_path).substitute(
+            {"root_path": self.server.root_path}
+        )
 
-    @staticmethod
-    def _generate_location_root_with_proxy_pass(server: HTTPD | StreamD) -> str:
-        if server.client_max_body_size is None:
-            client_max_body_size_str = ""
+    def _generate_location_root_with_proxy_pass(self) -> str:
+        if self.server.client_max_body_size is None:
+            include_client_max_body_size = ""
         else:
-            client_max_body_size_str = Template(
-                SNIPPET_TEMPLATE_CLIENT_MAX_BODY_SIZE
-            ).substitute({"client_max_body_size": server.client_max_body_size})
+            include_client_max_body_size = (
+                "include /app/nginx/snippets/client_max_body_size.conf;"
+            )
 
-        if server.support_websocket:
+        if self.server.support_websocket:
             include_websocket = "include /app/nginx/snippets/websocket.conf;"
         else:
             include_websocket = ""
 
-        return Template(http_d_template_location_default_with_proxy_pass).substitute(
+        return Template(http_d_template_location_root_with_proxy_pass).substitute(
             {
-                "client_max_body_size": client_max_body_size_str,
                 "include_websocket": include_websocket,
+                "include_client_max_body_size": include_client_max_body_size,
             }
         )
 
 
-class ServerGeneratorStreamD(ServerGeneratorAbc):
-    @staticmethod
-    def _id_str(server: HTTPD | StreamD) -> str:
-        return f"stream.d:[{server.proxy_pass}]"
+class GenerateOneServerStreamD(GenerateOneServerAbc):
+    def id_str(self) -> str:
+        return f"stream.d:[{self.server.proxy_pass}]"
 
-    def _generate_one_server(self, server: HTTPD | StreamD) -> str:
-        if not server.enable:
-            logger.info(f"Skip {self._id_str(server)}")
-
+    def generate(self) -> str:
         result = ""
-        if isinstance(server.listen, int):
+        if isinstance(self.server.listen, int):
             result += Template(stream_d_template_main_no_ssl).substitute(
                 {
-                    "comment": server.comment,
-                    "listen": server.listen,
-                    "proxy_pass": server.proxy_pass,
+                    "comment": self.server.comment,
+                    "values": self.generate_values_list_str(),
+                    "listen": self.server.listen,
+                    "proxy_pass": self.server.proxy_pass,
                 }
             )
 
-        if isinstance(server.listen_ssl, int):
-            ssl_params_str = self._generate_ssl_snippet(server.ssl_cert_domain)
-            if ssl_params_str is None:
-                logger.error(f"{self._id_str(server)} miss [ssl_cert_domain]")
+        if isinstance(self.server.listen_ssl, int):
+            ssl_params_include_str = self.generate_ssl_params_include()
+            if ssl_params_include_str is None:
+                logger.error(f"{self.id_str()} miss [ssl_cert_domain]")
                 return ""
 
             result += Template(stream_d_template_main_only_ssl).substitute(
                 {
-                    "comment": server.comment,
-                    "listen_ssl": server.listen_ssl,
-                    "ssl_params": ssl_params_str,
-                    "proxy_pass": server.proxy_pass,
+                    "comment": self.server.comment,
+                    "values": self.generate_values_list_str(),
+                    "listen_ssl": self.server.listen_ssl,
+                    "ssl_params_include": ssl_params_include_str,
+                    "proxy_pass": self.server.proxy_pass,
                 }
             )
 
-        logger.info(f"Generate {self._id_str(server)}")
         return result
+
+
+class NginxGenerator:
+    nginx_toml: str
+    http_d_dir: str
+    stream_d_dir: str
+
+    config: Config
+
+    def __init__(self, nginx_toml: str, http_d_dir: str, stream_d_dir: str):
+        self.nginx_toml = nginx_toml
+        self.http_d_dir = http_d_dir
+        self.stream_d_dir = stream_d_dir
+
+    def __call__(self, *args, **kwargs):
+        # parse nginx.toml
+        try:
+            with open(self.nginx_toml, "rb") as f:
+                config_obj = tomllib.load(f)
+
+        except FileNotFoundError as e:
+            logger.critical(f"Open file {self.nginx_toml} failed, {e}")
+            exit(1)
+        except tomllib.TOMLDecodeError as e:
+            logger.critical(f"Parse file {self.nginx_toml} failed, {e}")
+            exit(1)
+
+        try:
+            self.config = Config.model_validate(config_obj)
+        except pydantic.ValidationError as e:
+            logger.critical(f"Parse file {self.nginx_toml} failed, {e}")
+            exit(1)
+
+        # generate http.d
+        conf_content = ""
+        for server in self.config.http_d:
+            conf_content += GenerateOneServerHTTPD(
+                server=server, default=self.config.default
+            )()
+        conf_filename = Path(self.http_d_dir).joinpath(CONF_FILENAME_HTTP_D).as_posix()
+        self.generate_conf_file(conf_filename=conf_filename, conf_content=conf_content)
+
+        # generate stream.d
+        conf_content = ""
+        for server in self.config.stream_d:
+            conf_content += GenerateOneServerStreamD(
+                server=server, default=self.config.default
+            )()
+        conf_filename = (
+            Path(self.http_d_dir).joinpath(CONF_FILENAME_STREAM_D).as_posix()
+        )
+        self.generate_conf_file(conf_filename=conf_filename, conf_content=conf_content)
+
+    @staticmethod
+    def generate_conf_file(conf_filename: str, conf_content: str):
+        logger.info(f"Generate [{conf_filename}]...")
+
+        try:
+            with open(conf_filename, "w") as f:
+                f.write(conf_content)
+            logger.info(f"Generate [{conf_filename}]...DONE")
+        except OSError as e:
+            logger.critical(f"Generate [{conf_filename}] failed, {e}")
+            exit(1)
