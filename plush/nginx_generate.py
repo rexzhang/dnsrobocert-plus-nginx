@@ -12,6 +12,17 @@ CONF_FILENAME_STREAM_D = "stream.conf"
 
 SSL_FILE_BASE_PATH = "/data/dnsrobocert/live"
 
+block_template_ssl = """
+ssl_certificate     $ssl_path_root/fullchain.pem;
+ssl_certificate_key $ssl_path_root/privkey.pem;
+include /app/nginx/snippets/ssl-params.conf;
+"""
+
+block_template_client_max_body_size = """
+#  Fix: 413 - Request Entity Too Large
+client_max_body_size $client_max_body_size;
+"""
+
 http_d_template_main_only_http = """
 server {
     server_name $server_name;
@@ -28,7 +39,7 @@ server {
     $listen_ssl
     
     $values
-    $ssl_params_include
+    $block_ssl
     $locations
 }
 """
@@ -49,7 +60,7 @@ server {
 
     proxy_buffering off; ## Sends data as fast as it can not buffering large chunks.
 
-    $ssl_params_include
+    $block_ssl
     $locations
 }
 """
@@ -61,9 +72,10 @@ http_d_template_location_root_with_root_path = """
 
 http_d_template_location_root_with_proxy_pass = """
     location / {
+        $block_client_max_body_size
+
         include /app/nginx/snippets/proxy-params.conf;
         $include_websocket
-        $include_client_max_body_size
         
         proxy_pass $$proxy_pass;
     }"""
@@ -92,7 +104,7 @@ server {
     $values
 
     proxy_ssl on;
-    $ssl_params_include
+    $block_ssl
 
     proxy_pass $$proxy_pass;
 }
@@ -207,7 +219,7 @@ class GenerateOneServerAbc:
                     raise
         return result
 
-    def generate_ssl_params_include(self) -> str:
+    def generate_block_ssl(self) -> str:
         if self.server.ssl_cert_domain is None:
             ssl_cert_domain = self.default.ssl_cert_domain
         else:
@@ -217,10 +229,10 @@ class GenerateOneServerAbc:
             # default is None
             return ""
 
-        self.update_value(
-            k="ssl_path_root", v=f"{SSL_FILE_BASE_PATH}/{ssl_cert_domain}"
+        # return "include /app/nginx/snippets/ssl-params.conf;"
+        return Template(block_template_ssl).substitute(
+            {"ssl_path_root": f"{SSL_FILE_BASE_PATH}/{ssl_cert_domain}"}
         )
-        return "include /app/nginx/snippets/ssl-params.conf"
 
     @staticmethod
     def id_str() -> str:
@@ -303,22 +315,13 @@ class GenerateOneServerHTTPD(GenerateOneServerAbc):
             case _:
                 raise
 
-        # if self.server.root_path:
-        #     root_or_proxy_pass = f"root_path {self.server.root_path};"
-        # elif self.server.proxy_pass:
-        #     root_or_proxy_pass = f"set $proxy_pass {self.server.proxy_pass};"
-        # else:
-        #     logger.error(f"{self.id_str()} miss [listen] and [listen_ssl]")
-        #     return ""
-
         result = main_template.substitute(
             {
                 "values": self.generate_values_list_str(),
                 "server_name": self.server.server_name,
                 "listen": listen,
                 "listen_ssl": listen_ssl,
-                "ssl_params_include": self.generate_ssl_params_include(),
-                # "root_or_proxy_pass": root_or_proxy_pass,
+                "block_ssl": self.generate_block_ssl(),
                 "locations": locations_str,
             }
         )
@@ -332,11 +335,11 @@ class GenerateOneServerHTTPD(GenerateOneServerAbc):
 
     def _generate_location_root_with_proxy_pass(self) -> str:
         if self.server.client_max_body_size is None:
-            include_client_max_body_size = ""
+            block_client_max_body_size_str = ""
         else:
-            include_client_max_body_size = (
-                "include /app/nginx/snippets/client_max_body_size.conf;"
-            )
+            block_client_max_body_size_str = Template(
+                block_template_client_max_body_size
+            ).substitute({"client_max_body_size": self.server.client_max_body_size})
 
         if self.server.support_websocket:
             include_websocket = "include /app/nginx/snippets/websocket.conf;"
@@ -346,7 +349,7 @@ class GenerateOneServerHTTPD(GenerateOneServerAbc):
         return Template(http_d_template_location_root_with_proxy_pass).substitute(
             {
                 "include_websocket": include_websocket,
-                "include_client_max_body_size": include_client_max_body_size,
+                "block_client_max_body_size": block_client_max_body_size_str,
             }
         )
 
@@ -368,8 +371,8 @@ class GenerateOneServerStreamD(GenerateOneServerAbc):
             )
 
         if isinstance(self.server.listen_ssl, int):
-            ssl_params_include_str = self.generate_ssl_params_include()
-            if ssl_params_include_str is None:
+            block_ssl_str = self.generate_block_ssl()
+            if block_ssl_str is None:
                 logger.error(f"{self.id_str()} miss [ssl_cert_domain]")
                 return ""
 
@@ -378,7 +381,7 @@ class GenerateOneServerStreamD(GenerateOneServerAbc):
                     "comment": self.server.comment,
                     "values": self.generate_values_list_str(),
                     "listen_ssl": self.server.listen_ssl,
-                    "ssl_params_include": ssl_params_include_str,
+                    "block_ssl": block_ssl_str,
                     "proxy_pass": self.server.proxy_pass,
                 }
             )
@@ -433,7 +436,7 @@ class NginxGenerator:
                 server=server, default=self.config.default
             )()
         conf_filename = (
-            Path(self.http_d_dir).joinpath(CONF_FILENAME_STREAM_D).as_posix()
+            Path(self.stream_d_dir).joinpath(CONF_FILENAME_STREAM_D).as_posix()
         )
         self.generate_conf_file(conf_filename=conf_filename, conf_content=conf_content)
 
