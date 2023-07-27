@@ -6,8 +6,8 @@
 
 - simple
 - one container
-- none-root user
-- none-SQL
+- non-root
+- non-SQL
 - for self-hosted
 
 # Quick Start
@@ -17,7 +17,8 @@
 ```shell
 docker pull ray1ex/dnsrobocert-plus-nginx:latest
 docker run -dit --restart unless-stopped \ 
-  -u 1000:1000 -p 80:10080 -p 443:10443 \
+  -u 1000:1000 \
+  -p 80:10080 -p 443:10443 -p 22:10022 \
   -v /your/path/config:/config \
   -v /your/path/data:/data \
   -v /your/path/logs:/logs \
@@ -69,6 +70,11 @@ server_name = "www2.example.com"
 listen = 10080
 listen_ssl = 10443
 root = "root /mnt/www/www2.example.com"
+
+[[stream_d]]
+comment = "ssh"
+listen = 10022
+proxy_pass = "192.168.1.1:22"
 ```
 
 # FAQ
