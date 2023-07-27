@@ -2,8 +2,6 @@
 
 [![Docker Pulls](https://img.shields.io/docker/pulls/ray1ex/dnsrobocert-plus-nginx)](https://hub.docker.com/repository/docker/ray1ex/dnsrobocert-plus-nginx)
 
-[GitHub repos](https://github.com/rexzhang/dnsrobocert-plus-nginx/)
-
 - simple
 - one container
 - non-root
@@ -69,7 +67,7 @@ proxy_pass = "http://172.17.0.1:8000"
 server_name = "www2.example.com"
 listen = 10080
 listen_ssl = 10443
-root = "root /mnt/www/www2.example.com"
+root_path = "root /mnt/www/www2.example.com"
 
 [[stream_d]]
 comment = "ssh"
