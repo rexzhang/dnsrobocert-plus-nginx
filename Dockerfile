@@ -1,4 +1,4 @@
-FROM python:3.11-alpine
+FROM python:3.12-alpine
 
 ARG ENV
 ENV DEPLOY_HOOK="/app/nginx_restart.sh"
