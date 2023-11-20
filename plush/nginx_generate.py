@@ -1,8 +1,9 @@
+import builtins
 import tomllib
 from logging import getLogger
 from pathlib import Path
 from string import Template
-import builtins
+
 import pydantic
 
 logger = getLogger(__name__)
