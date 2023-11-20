@@ -1,6 +1,7 @@
 # dnsrobocert-plus-nginx[WIP]
 
-[![Docker Pulls](https://img.shields.io/docker/pulls/ray1ex/dnsrobocert-plus-nginx)](https://hub.docker.com/repository/docker/ray1ex/dnsrobocert-plus-nginx)
+![Docker Image Version (tag latest semver)](https://img.shields.io/docker/v/ray1ex/dnsrobocert-plus-nginx/latest)
+[![Docker Pulls](https://img.shields.io/docker/pulls/ray1ex/dnsrobocert-plus-nginx)](https://hub.docker.com/r/ray1ex/dnsrobocert-plus-nginx/tags)
 
 - simple
 - one container
@@ -8,9 +9,9 @@
 - non-SQL
 - for self-hosted
 
-# Quick Start
+## Quick Start
 
-## Install
+### Install
 
 ```shell
 docker pull ray1ex/dnsrobocert-plus-nginx:latest
@@ -23,9 +24,9 @@ docker run -dit --restart unless-stopped \
   --name dnsrobocert-plus-nginx ray1ex/dnsrobocert-plus-nginx
 ```
 
-# Config Example
+## Config Example
 
-## `/your/path/config/dnsrobocert.yml`
+### `/your/path/config/dnsrobocert.yml`
 
 ```yaml
 draft: false
@@ -51,7 +52,7 @@ Ref：
 - [DNSroboCert’s provider options page](https://dnsrobocert.readthedocs.io/en/latest/configuration_reference.html)
 - [Lexicon’s provider options page](https://dns-lexicon.readthedocs.io/en/latest/providers_options.html)
 
-## `/your/path/config/nginx.toml`
+### `/your/path/config/nginx.toml`
 
 ```toml
 [default]
@@ -75,23 +76,23 @@ listen = 10022
 proxy_pass = "192.168.1.1:22"
 ```
 
-# FAQ
+## FAQ
 
 ## Why is `listen_http = false` set, NGINX is still response http2
 
 Please `http2` turn off all services under the same port, which is a feature of NGINX.
 
-# More Info
+## More Info
 
-- https://github.com/adferrand/dnsrobocert
+- <https://github.com/adferrand/dnsrobocert>
 
-# debug
+## debug
 
 ```shell
 python -m plush generate --nginx-toml nginx.toml --http-d-dir /tmp --stream-d-dir /tmp
 ```
 
-# TODO
+## TODO
 
 - 统一日志输出
 - 自动重新装载nginx
