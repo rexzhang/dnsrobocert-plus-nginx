@@ -14,21 +14,25 @@ CONF_FILENAME_STREAM_D = "stream.conf"
 SSL_FILE_BASE_PATH = "/data/dnsrobocert/live"
 
 block_template_ssl = """
+# SSL certificate
 ssl_certificate     $ssl_path_root/fullchain.pem;
 ssl_certificate_key $ssl_path_root/privkey.pem;
-include /app/nginx/snippets/ssl-params.conf;
-"""
-
+include /app/nginx/snippets/ssl-params.conf;"""
+block_template_websocket = """
+# Enable WebSocket Support
+include /app/nginx/snippets/websocket.conf;"""
 block_template_client_max_body_size = """
-#  Fix: 413 - Request Entity Too Large
-client_max_body_size $client_max_body_size;
-"""
+# Fix: 413 - Request Entity Too Large
+client_max_body_size $client_max_body_size;"""
+block_template_hsts = """
+# Enable HSTS
+include /app/nginx/snippets/hsts.conf;"""
 
 http_d_template_main_only_http = """
 server {
     server_name $server_name;
     $listen
-    
+
     $values
     $locations
 }
@@ -38,9 +42,10 @@ http_d_template_main_only_https = """
 server {
     server_name $server_name;
     $listen_ssl
-    
+
     $values
     $block_ssl
+    $block_hsts
     $locations
 }
 """
@@ -49,19 +54,20 @@ http_d_template_main_http_and_https = """
 server {
     server_name $server_name;
     $listen
-    
+
     return 301 https://$server_name$$request_uri;
 }
 
 server {
     $listen_ssl
     server_name $server_name;
-    
+
     $values
 
     proxy_buffering off; ## Sends data as fast as it can not buffering large chunks.
 
     $block_ssl
+    $block_hsts
     $locations
 }
 """
@@ -76,8 +82,8 @@ http_d_template_location_root_with_proxy_pass = """
         $block_client_max_body_size
 
         include /app/nginx/snippets/proxy-params.conf;
-        $include_websocket
-        
+        $block_websocket
+
         proxy_pass $$proxy_pass;
     }"""
 
@@ -86,13 +92,14 @@ http_d_template_location_custom = """
         $location_content
     }"""
 
+
 stream_d_template_main_no_ssl = """
 server {
     # $comment
     listen $listen;
-    
-    $values    
-    
+
+    $values
+
     proxy_pass $$proxy_pass;
 }
 """
@@ -101,7 +108,7 @@ stream_d_template_main_only_ssl = """
 server {
     # $comment
     listen $listen_ssl ssl;
-    
+
     $values
 
     proxy_ssl on;
@@ -137,6 +144,7 @@ class HTTPD(ServerAbc):
     location: dict[str, str] = dict()
     client_max_body_size: str | None = None
     support_websocket: bool = False
+    hsts: bool = False
 
 
 class StreamD(ServerAbc):
@@ -316,6 +324,11 @@ class GenerateOneServerHTTPD(GenerateOneServerAbc):
             case _:
                 raise
 
+        if self.server.hsts:
+            block_hsts = block_template_hsts
+        else:
+            block_hsts = ""
+
         result = main_template.substitute(
             {
                 "values": self.generate_values_list_str(),
@@ -323,6 +336,7 @@ class GenerateOneServerHTTPD(GenerateOneServerAbc):
                 "listen": listen,
                 "listen_ssl": listen_ssl,
                 "block_ssl": self.generate_block_ssl(),
+                "block_hsts": block_hsts,
                 "locations": locations_str,
             }
         )
@@ -343,13 +357,13 @@ class GenerateOneServerHTTPD(GenerateOneServerAbc):
             ).substitute({"client_max_body_size": self.server.client_max_body_size})
 
         if self.server.support_websocket:
-            include_websocket = "include /app/nginx/snippets/websocket.conf;"
+            block_websocket = block_template_websocket
         else:
-            include_websocket = ""
+            block_websocket = ""
 
         return Template(http_d_template_location_root_with_proxy_pass).substitute(
             {
-                "include_websocket": include_websocket,
+                "block_websocket": block_websocket,
                 "block_client_max_body_size": block_client_max_body_size_str,
             }
         )
