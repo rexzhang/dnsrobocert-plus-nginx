@@ -24,9 +24,10 @@ include /app/nginx/snippets/websocket.conf;"""
 block_template_client_max_body_size = """
 # Fix: 413 - Request Entity Too Large
 client_max_body_size $client_max_body_size;"""
+# https://www.nginx.com/blog/http-strict-transport-security-hsts-and-nginx/
 block_template_hsts = """
 # Enable HSTS
-include /app/nginx/snippets/hsts.conf;"""
+add_header Strict-Transport-Security "max-age=$hsts_max_age; includeSubDomains" always;"""
 
 http_d_template_main_only_http = """
 server {
@@ -145,6 +146,7 @@ class HTTPD(ServerAbc):
     client_max_body_size: str | None = None
     support_websocket: bool = False
     hsts: bool = False
+    hsts_max_age: int = 31536000
 
 
 class StreamD(ServerAbc):
@@ -325,7 +327,9 @@ class GenerateOneServerHTTPD(GenerateOneServerAbc):
                 raise
 
         if self.server.hsts:
-            block_hsts = block_template_hsts
+            block_hsts = Template(block_template_hsts).substitute(
+                {"hsts_max_age": self.server.hsts_max_age}
+            )
         else:
             block_hsts = ""
 
