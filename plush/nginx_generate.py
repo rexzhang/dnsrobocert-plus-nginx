@@ -28,6 +28,12 @@ client_max_body_size $client_max_body_size;"""
 block_template_hsts = """
 # Enable HSTS
 add_header Strict-Transport-Security "max-age=$hsts_max_age; includeSubDomains" always;"""
+block_template_upstream = """
+# upstream server define
+upstream $upstream_name {
+    server $upstream_server;
+}
+"""
 
 http_d_template_main_only_http = """
 server {
@@ -40,6 +46,8 @@ server {
 """
 
 http_d_template_main_only_https = """
+$block_upstream
+
 server {
     server_name $server_name;
     $listen_ssl
@@ -52,6 +60,8 @@ server {
 """
 
 http_d_template_main_http_and_https = """
+$block_upstream
+
 server {
     server_name $server_name;
     $listen
@@ -131,6 +141,9 @@ class ServerAbc(pydantic.BaseModel):
     listen_ssl: int = None
 
     ssl_cert_domain: str = None
+
+    upstream_name: str = None
+    upstream_server: str = None
 
 
 class HTTPD(ServerAbc):
@@ -333,6 +346,16 @@ class GenerateOneServerHTTPD(GenerateOneServerAbc):
         else:
             block_hsts = ""
 
+        if self.server.upstream_name and self.server.upstream_server:
+            block_upstream = Template(block_template_upstream).substitute(
+                {
+                    "upstream_name": self.server.upstream_name,
+                    "upstream_server": self.server.upstream_server,
+                }
+            )
+        else:
+            block_upstream = ""
+
         result = main_template.substitute(
             {
                 "values": self.generate_values_list_str(),
@@ -341,6 +364,7 @@ class GenerateOneServerHTTPD(GenerateOneServerAbc):
                 "listen_ssl": listen_ssl,
                 "block_ssl": self.generate_block_ssl(),
                 "block_hsts": block_hsts,
+                "block_upstream": block_upstream,
                 "locations": locations_str,
             }
         )
