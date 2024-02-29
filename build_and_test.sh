@@ -18,5 +18,5 @@ docker run -dit --restart unless-stopped \
   -v /tmp:/data \
   -v /tmp/logs:/logs \
   --name dnsrobocert-plus-nginx cr.h.rexzhang.com/ray1ex/dnsrobocert-plus-nginx
-docker image prune -f
+
 docker container logs -f dnsrobocert-plus-nginx
