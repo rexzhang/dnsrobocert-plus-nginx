@@ -105,6 +105,7 @@ http_d_template_location_custom = """
 
 
 stream_d_template_main_no_ssl = """
+$block_upstream
 server {
     # $comment
     listen $listen;
@@ -116,6 +117,7 @@ server {
 """
 
 stream_d_template_main_only_ssl = """
+$block_upstream
 server {
     # $comment
     listen $listen_ssl ssl;
@@ -402,6 +404,16 @@ class GenerateOneServerStreamD(GenerateOneServerAbc):
         return f"stream.d:[{self.server.proxy_pass}]"
 
     def generate(self) -> str:
+        if self.server.upstream_name and self.server.upstream_server:
+            block_upstream = Template(block_template_upstream).substitute(
+                {
+                    "upstream_name": self.server.upstream_name,
+                    "upstream_server": self.server.upstream_server,
+                }
+            )
+        else:
+            block_upstream = ""
+
         result = ""
         if isinstance(self.server.listen, int):
             result += Template(stream_d_template_main_no_ssl).substitute(
@@ -410,6 +422,7 @@ class GenerateOneServerStreamD(GenerateOneServerAbc):
                     "values": self.generate_values_list_str(),
                     "listen": self.server.listen,
                     "proxy_pass": self.server.proxy_pass,
+                    "block_upstream": block_upstream,
                 }
             )
 
@@ -426,6 +439,7 @@ class GenerateOneServerStreamD(GenerateOneServerAbc):
                     "listen_ssl": self.server.listen_ssl,
                     "block_ssl": block_ssl_str,
                     "proxy_pass": self.server.proxy_pass,
+                    "block_upstream": block_upstream,
                 }
             )
 

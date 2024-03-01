@@ -71,3 +71,10 @@ proxy_pass = "http://upstream_test"
 comment = "ssh"
 listen = 10022
 proxy_pass = "192.168.1.1:22"
+
+[[stream_d]]
+comment = "git"
+listen = 12222
+upstream_name = "ssh_upstream_test"
+upstream_server = "test.lan:22"
+proxy_pass = "ssh_upstream_test"
