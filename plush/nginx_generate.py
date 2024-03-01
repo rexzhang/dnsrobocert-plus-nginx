@@ -6,36 +6,71 @@ from string import Template
 
 import pydantic
 
+from plush.constants import (
+    DEFAULT_NGINX_HTTP_CONF,
+    DEFAULT_NGINX_HTTP_DEFAULT_CONF,
+    DEFAULT_NGINX_STREAM_CONF,
+    DEFAULT_SSL_FILE_DIR,
+    DEFAULT_HTTP_PORT,
+    DEFAULT_HTTPS_PORT,
+)
+
 logger = getLogger(__name__)
 
-CONF_FILENAME_HTTP_D = "http.conf"
-CONF_FILENAME_STREAM_D = "stream.conf"
 
-SSL_FILE_BASE_PATH = "/data/dnsrobocert/live"
+black_template_default_listen = """
+listen $port default_server;
+listen [::]:$port default_server;"""
+
+black_template_default_listen_ssl = """
+listen $port ssl http2 default_server;
+listen [::]:$port ssl http2 default_server;"""
 
 block_template_ssl = """
 # SSL certificate
 ssl_certificate     $ssl_path_root/fullchain.pem;
 ssl_certificate_key $ssl_path_root/privkey.pem;
 include /app/nginx/snippets/ssl-params.conf;"""
+
 block_template_websocket = """
 # Enable WebSocket Support
 include /app/nginx/snippets/websocket.conf;"""
+
 block_template_client_max_body_size = """
 # Fix: 413 - Request Entity Too Large
 client_max_body_size $client_max_body_size;"""
+
 # https://www.nginx.com/blog/http-strict-transport-security-hsts-and-nginx/
 block_template_hsts = """
 # Enable HSTS
 add_header Strict-Transport-Security "max-age=$hsts_max_age; includeSubDomains" always;"""
+
 block_template_upstream = """
 # upstream server define
 upstream $upstream_name {
     server $upstream_server;
+}"""
+
+# https://serverfault.com/questions/578648/properly-setting-up-a-default-nginx-server-for-https
+http_default_conf_template = """
+map "" $$empty {
+    default "";
+}
+
+server {
+    $default_listen
+
+    server_name _;
+
+    ssl_ciphers aNULL;
+    ssl_certificate data:$$empty;
+    ssl_certificate_key data:$$empty;
+
+    return 444;
 }
 """
 
-http_d_template_main_only_http = """
+http_conf_template_main_only_http = """
 server {
     server_name $server_name;
     $listen
@@ -45,9 +80,8 @@ server {
 }
 """
 
-http_d_template_main_only_https = """
+http_conf_template_main_only_https = """
 $block_upstream
-
 server {
     server_name $server_name;
     $listen_ssl
@@ -59,9 +93,8 @@ server {
 }
 """
 
-http_d_template_main_http_and_https = """
+http_conf_template_main_http_and_https = """
 $block_upstream
-
 server {
     server_name $server_name;
     $listen
@@ -83,12 +116,12 @@ server {
 }
 """
 
-http_d_template_location_root_with_root_path = """
+block_template_location_root_with_root_path = """
     location / {
         root $$root_path;
     }"""
 
-http_d_template_location_root_with_proxy_pass = """
+block_template_location_root_with_proxy_pass = """
     location / {
         $block_client_max_body_size
 
@@ -98,13 +131,13 @@ http_d_template_location_root_with_proxy_pass = """
         proxy_pass $$proxy_pass;
     }"""
 
-http_d_template_location_custom = """
+block_template_location_custom = """
     location $location_path {
         $location_content
     }"""
 
 
-stream_d_template_main_no_ssl = """
+stream_conf_template_main_no_ssl = """
 $block_upstream
 server {
     # $comment
@@ -116,7 +149,7 @@ server {
 }
 """
 
-stream_d_template_main_only_ssl = """
+stream_conf_template_main_only_ssl = """
 $block_upstream
 server {
     # $comment
@@ -255,9 +288,12 @@ class GenerateOneServerAbc:
             # default is None
             return ""
 
-        # return "include /app/nginx/snippets/ssl-params.conf;"
         return Template(block_template_ssl).substitute(
-            {"ssl_path_root": f"{SSL_FILE_BASE_PATH}/{ssl_cert_domain}"}
+            {
+                "ssl_path_root": Path(DEFAULT_SSL_FILE_DIR)
+                .joinpath(ssl_cert_domain)
+                .as_posix()
+            }
         )
 
     @staticmethod
@@ -298,7 +334,7 @@ class GenerateOneServerHTTPD(GenerateOneServerAbc):
                 return ""
 
         for k, v in self.server.location.items():
-            locations_str += Template(http_d_template_location_custom).substitute(
+            locations_str += Template(block_template_location_custom).substitute(
                 {"location_path": k, "location_content": v}
             )
 
@@ -308,11 +344,11 @@ class GenerateOneServerHTTPD(GenerateOneServerAbc):
             isinstance(self.server.listen_ssl, int),
         ):
             case (True, False):
-                main_template = Template(http_d_template_main_only_http)
+                main_template = Template(http_conf_template_main_only_http)
             case (False, True):
-                main_template = Template(http_d_template_main_only_https)
+                main_template = Template(http_conf_template_main_only_https)
             case (True, True):
-                main_template = Template(http_d_template_main_http_and_https)
+                main_template = Template(http_conf_template_main_http_and_https)
             case _:
                 logger.error(f"{self.id_str()} miss [listen] and [listen_ssl]")
                 return ""
@@ -374,7 +410,7 @@ class GenerateOneServerHTTPD(GenerateOneServerAbc):
         return result
 
     def _generate_location_root_with_root(self) -> str:
-        return Template(http_d_template_location_root_with_root_path).substitute(
+        return Template(block_template_location_root_with_root_path).substitute(
             {"root_path": self.server.root_path}
         )
 
@@ -391,7 +427,7 @@ class GenerateOneServerHTTPD(GenerateOneServerAbc):
         else:
             block_websocket = ""
 
-        return Template(http_d_template_location_root_with_proxy_pass).substitute(
+        return Template(block_template_location_root_with_proxy_pass).substitute(
             {
                 "block_websocket": block_websocket,
                 "block_client_max_body_size": block_client_max_body_size_str,
@@ -416,7 +452,7 @@ class GenerateOneServerStreamD(GenerateOneServerAbc):
 
         result = ""
         if isinstance(self.server.listen, int):
-            result += Template(stream_d_template_main_no_ssl).substitute(
+            result += Template(stream_conf_template_main_no_ssl).substitute(
                 {
                     "comment": self.server.comment,
                     "values": self.generate_values_list_str(),
@@ -432,7 +468,7 @@ class GenerateOneServerStreamD(GenerateOneServerAbc):
                 logger.error(f"{self.id_str()} miss [ssl_cert_domain]")
                 return ""
 
-            result += Template(stream_d_template_main_only_ssl).substitute(
+            result += Template(stream_conf_template_main_only_ssl).substitute(
                 {
                     "comment": self.server.comment,
                     "values": self.generate_values_list_str(),
@@ -447,55 +483,91 @@ class GenerateOneServerStreamD(GenerateOneServerAbc):
 
 
 class NginxGenerator:
-    nginx_toml: str
-    http_d_dir: str
-    stream_d_dir: str
+    CONFIG_NGINX_TOML: str
+    NGINX_CONF_DIR: str
 
     config: Config
 
-    def __init__(self, nginx_toml: str, http_d_dir: str, stream_d_dir: str):
-        self.nginx_toml = nginx_toml
-        self.http_d_dir = http_d_dir
-        self.stream_d_dir = stream_d_dir
+    def __init__(self, config_nginx_toml: str, nginx_conf_dir: str):
+        self.CONFIG_NGINX_TOML = config_nginx_toml
+        self.NGINX_CONF_DIR = nginx_conf_dir
 
     def __call__(self, *args, **kwargs):
         # parse nginx.toml
         try:
-            with open(self.nginx_toml, "rb") as f:
+            with open(self.CONFIG_NGINX_TOML, "rb") as f:
                 config_obj = tomllib.load(f)
 
         except FileNotFoundError as e:
-            logger.critical(f"Open file {self.nginx_toml} failed, {e}")
+            logger.critical(f"Open file {self.CONFIG_NGINX_TOML} failed, {e}")
             exit(1)
         except tomllib.TOMLDecodeError as e:
-            logger.critical(f"Parse file {self.nginx_toml} failed, {e}")
+            logger.critical(f"Parse file {self.CONFIG_NGINX_TOML} failed, {e}")
             exit(1)
 
         try:
             self.config = Config.model_validate(config_obj)
         except pydantic.ValidationError as e:
-            logger.critical(f"Parse file {self.nginx_toml} failed, {e}")
+            logger.critical(f"Parse file {self.CONFIG_NGINX_TOML} failed, {e}")
             exit(1)
 
-        # generate http.d
-        conf_content = ""
+        # parser http_d
+        http_default_listen = {DEFAULT_HTTP_PORT}
+        http_default_listen_ssl = {DEFAULT_HTTPS_PORT}
+        http_conf_content = ""
         for server in self.config.http_d:
-            conf_content += GenerateOneServerHTTPD(
-                server=server, default=self.config.default
-            )()
-        conf_filename = Path(self.http_d_dir).joinpath(CONF_FILENAME_HTTP_D).as_posix()
-        self.generate_conf_file(conf_filename=conf_filename, conf_content=conf_content)
+            # http_defautl.conf
+            if server.listen:
+                http_default_listen.add(server.listen)
+            if server.listen_ssl:
+                http_default_listen_ssl.add(server.listen_ssl)
 
-        # generate stream.d
-        conf_content = ""
-        for server in self.config.stream_d:
-            conf_content += GenerateOneServerStreamD(
+            # http.conf
+            http_conf_content += GenerateOneServerHTTPD(
                 server=server, default=self.config.default
             )()
-        conf_filename = (
-            Path(self.stream_d_dir).joinpath(CONF_FILENAME_STREAM_D).as_posix()
+
+        # generate http_default.conf
+        http_default_conf_content = ""
+        for port in http_default_listen:
+            http_default_conf_content += Template(
+                black_template_default_listen
+            ).substitute({"port": port})
+        for port in http_default_listen_ssl:
+            http_default_conf_content += Template(
+                black_template_default_listen_ssl
+            ).substitute({"port": port})
+
+        defautl_conf_content = Template(http_default_conf_template).substitute(
+            {"default_listen": http_default_conf_content}
         )
-        self.generate_conf_file(conf_filename=conf_filename, conf_content=conf_content)
+        self.generate_conf_file(
+            conf_filename=Path(self.NGINX_CONF_DIR)
+            .joinpath(DEFAULT_NGINX_HTTP_DEFAULT_CONF)
+            .as_posix(),
+            conf_content=defautl_conf_content,
+        )
+
+        # generate http.conf
+        self.generate_conf_file(
+            conf_filename=Path(self.NGINX_CONF_DIR)
+            .joinpath(DEFAULT_NGINX_HTTP_CONF)
+            .as_posix(),
+            conf_content=http_conf_content,
+        )
+
+        # generate stream.conf
+        stream_conf_content = ""
+        for server in self.config.stream_d:
+            stream_conf_content += GenerateOneServerStreamD(
+                server=server, default=self.config.default
+            )()
+        self.generate_conf_file(
+            conf_filename=Path(self.NGINX_CONF_DIR)
+            .joinpath(DEFAULT_NGINX_STREAM_CONF)
+            .as_posix(),
+            conf_content=stream_conf_content,
+        )
 
     @staticmethod
     def generate_conf_file(conf_filename: str, conf_content: str):

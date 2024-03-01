@@ -2,13 +2,10 @@ from logging import getLogger
 
 import click
 
+from plush.constants import DEFAULT_CONFIG_NGINX_TOML, DEFAULT_NGINX_CONF_DIR
 from plush.nginx_generate import NginxGenerator
 
 logger = getLogger(__name__)
-
-DEFAULT_NGINX_TOML = "/config/nginx.toml"
-DEFAULT_HTTP_D_DIR = "/data/nginx/http.d"
-DEFAULT_STREAM_D_DIR = "/data/nginx/stream.d"
 
 
 @click.group()
@@ -24,22 +21,16 @@ def runserver(**cli_kwargs):
 
 @cli.command("generate", help="nginx *.conf generator")
 @click.option(
-    "--nginx-toml",
-    default=DEFAULT_NGINX_TOML,
+    "--config-nginx-toml",
+    default=DEFAULT_CONFIG_NGINX_TOML,
     type=str,
-    help=f"[default:{DEFAULT_NGINX_TOML}]",
+    help=f"[default:{DEFAULT_CONFIG_NGINX_TOML}]",
 )
 @click.option(
-    "--http-d-dir",
-    default=DEFAULT_HTTP_D_DIR,
+    "--nginx-conf-dir",
+    default=DEFAULT_NGINX_CONF_DIR,
     type=str,
-    help=f"[default:{DEFAULT_HTTP_D_DIR}]",
-)
-@click.option(
-    "--stream-d-dir",
-    default=DEFAULT_STREAM_D_DIR,
-    type=str,
-    help=f"[default:{DEFAULT_STREAM_D_DIR}]",
+    help=f"[default:{DEFAULT_NGINX_CONF_DIR}]",
 )
 def generator(**cli_kwargs):
     NginxGenerator(**cli_kwargs)()

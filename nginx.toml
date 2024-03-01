@@ -16,6 +16,11 @@ listen_ssl = 10443
 proxy_pass = "http://127.0.0.1:8000"
 
 [[http_d]]
+server_name = "www.special.port"
+listen_ssl = 55555
+proxy_pass = "http://127.0.0.1:8000"
+
+[[http_d]]
 server_name = "www.example.com"
 listen = 10080
 listen_ssl = 10443

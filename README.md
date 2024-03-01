@@ -76,6 +76,13 @@ listen = 10022
 proxy_pass = "192.168.1.1:22"
 ```
 
+## Custom NGINX config dir
+
+| part     | dir                    |
+| -------- | ---------------------- |
+| http.d   | `/data/nginx/http.d`   |
+| stream.d | `/data/nginx/stream.d` |
+
 ## FAQ
 
 ## Why is `listen_http = false` set, NGINX is still response http2
@@ -89,7 +96,7 @@ Please `http2` turn off all services under the same port, which is a feature of 
 ## debug
 
 ```shell
-python -m plush generate --nginx-toml nginx.toml --http-d-dir /tmp --stream-d-dir /tmp
+python -m plush generate --config-nginx-toml nginx.toml --nginx-conf-dir /tmp
 ```
 
 ## TODO
