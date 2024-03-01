@@ -7,12 +7,12 @@ from string import Template
 import pydantic
 
 from plush.constants import (
+    DEFAULT_HTTP_PORT,
+    DEFAULT_HTTPS_PORT,
     DEFAULT_NGINX_HTTP_CONF,
     DEFAULT_NGINX_HTTP_DEFAULT_CONF,
     DEFAULT_NGINX_STREAM_CONF,
     DEFAULT_SSL_FILE_DIR,
-    DEFAULT_HTTP_PORT,
-    DEFAULT_HTTPS_PORT,
 )
 
 logger = getLogger(__name__)
@@ -43,7 +43,7 @@ client_max_body_size $client_max_body_size;"""
 # https://www.nginx.com/blog/http-strict-transport-security-hsts-and-nginx/
 block_template_hsts = """
 # Enable HSTS
-add_header Strict-Transport-Security "max-age=$hsts_max_age; includeSubDomains" always;"""
+add_header Strict-Transport-Security "max-age=$hsts_max_age; includeSubDomains" always;"""  # noqa E501
 
 block_template_upstream = """
 # upstream server define
@@ -306,7 +306,11 @@ class GenerateOneServerAbc:
 
 class GenerateOneServerHTTPD(GenerateOneServerAbc):
     def id_str(self) -> str:
-        match self.server.server_name is None, self.server.root_path is None, self.server.proxy_pass is None:
+        match (
+            self.server.server_name is None,
+            self.server.root_path is None,
+            self.server.proxy_pass is None,
+        ):
             case False, False, True:
                 return (
                     f"http.d: [{self.server.root_path}] >> [{self.server.server_name}]"
@@ -358,7 +362,7 @@ class GenerateOneServerHTTPD(GenerateOneServerAbc):
                 listen = (
                     f"listen {self.server.listen}; listen [::]:{self.server.listen};"
                 )
-                listen_ssl = f"listen {self.server.listen_ssl} ssl http2; listen [::]:{self.server.listen_ssl} ssl http2;"
+                listen_ssl = f"listen {self.server.listen_ssl} ssl http2; listen [::]:{self.server.listen_ssl} ssl http2;"  # noqa E501
 
             case True, False:
                 listen = f"listen {self.server.listen};"
@@ -368,7 +372,7 @@ class GenerateOneServerHTTPD(GenerateOneServerAbc):
                 listen = (
                     f"listen {self.server.listen}; listen [::]:{self.server.listen};"
                 )
-                listen_ssl = f"listen {self.server.listen_ssl} ssl; listen [::]:{self.server.listen_ssl} ssl;"
+                listen_ssl = f"listen {self.server.listen_ssl} ssl; listen [::]:{self.server.listen_ssl} ssl;"  # noqa E501
 
             case False, False:
                 listen = f"listen {self.server.listen};"
