@@ -488,6 +488,9 @@ class NginxGenerator:
 
     config: Config
 
+    http_default_listen = {DEFAULT_HTTP_PORT}
+    http_default_listen_ssl = {DEFAULT_HTTPS_PORT}
+
     def __init__(self, config_nginx_toml: str, nginx_conf_dir: str):
         self.CONFIG_NGINX_TOML = config_nginx_toml
         self.NGINX_CONF_DIR = nginx_conf_dir
@@ -512,41 +515,22 @@ class NginxGenerator:
             exit(1)
 
         # parser http_d
-        http_default_listen = {DEFAULT_HTTP_PORT}
-        http_default_listen_ssl = {DEFAULT_HTTPS_PORT}
+
         http_conf_content = ""
         for server in self.config.http_d:
-            # http_defautl.conf
-            if server.listen:
-                http_default_listen.add(server.listen)
-            if server.listen_ssl:
-                http_default_listen_ssl.add(server.listen_ssl)
-
             # http.conf
             http_conf_content += GenerateOneServerHTTPD(
                 server=server, default=self.config.default
             )()
 
-        # generate http_default.conf
-        http_default_conf_content = ""
-        for port in http_default_listen:
-            http_default_conf_content += Template(
-                black_template_default_listen
-            ).substitute({"port": port})
-        for port in http_default_listen_ssl:
-            http_default_conf_content += Template(
-                black_template_default_listen_ssl
-            ).substitute({"port": port})
+            # http_defautl.conf
+            if not server.enable:
+                continue
 
-        defautl_conf_content = Template(http_default_conf_template).substitute(
-            {"default_listen": http_default_conf_content}
-        )
-        self.generate_conf_file(
-            conf_filename=Path(self.NGINX_CONF_DIR)
-            .joinpath(DEFAULT_NGINX_HTTP_DEFAULT_CONF)
-            .as_posix(),
-            conf_content=defautl_conf_content,
-        )
+            if server.listen:
+                self.http_default_listen.add(server.listen)
+            if server.listen_ssl:
+                self.http_default_listen_ssl.add(server.listen_ssl)
 
         # generate http.conf
         self.generate_conf_file(
@@ -554,6 +538,14 @@ class NginxGenerator:
             .joinpath(DEFAULT_NGINX_HTTP_CONF)
             .as_posix(),
             conf_content=http_conf_content,
+        )
+
+        # generate http_default.conf
+        self.generate_conf_file(
+            conf_filename=Path(self.NGINX_CONF_DIR)
+            .joinpath(DEFAULT_NGINX_HTTP_DEFAULT_CONF)
+            .as_posix(),
+            conf_content=self.generate_default_conf_content(),
         )
 
         # generate stream.conf
@@ -567,6 +559,21 @@ class NginxGenerator:
             .joinpath(DEFAULT_NGINX_STREAM_CONF)
             .as_posix(),
             conf_content=stream_conf_content,
+        )
+
+    def generate_default_conf_content(self) -> str:
+        http_default_conf_content = ""
+        for port in self.http_default_listen:
+            http_default_conf_content += Template(
+                black_template_default_listen
+            ).substitute({"port": port})
+        for port in self.http_default_listen_ssl:
+            http_default_conf_content += Template(
+                black_template_default_listen_ssl
+            ).substitute({"port": port})
+
+        return Template(http_default_conf_template).substitute(
+            {"default_listen": http_default_conf_content}
         )
 
     @staticmethod

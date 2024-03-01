@@ -9,7 +9,11 @@ mkdir -p /logs/dnsrobocert
 mkdir -p /logs/nginx
 
 # generate nginx *.conf file
-python -m plush generate
+run_plush_generate="python -m plush generate"
+while ! $run_plush_generate; do
+    echo "Run plush generate failed, retrying..."
+    sleep 1
+done
 
 # start nginx service
 start_nginx_service="/usr/sbin/nginx -e /logs/nginx/error.log"
