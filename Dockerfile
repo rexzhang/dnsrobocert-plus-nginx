@@ -10,7 +10,7 @@ RUN if [ "$ENV" = "rex" ]; then echo "Change depends" \
     && sed -i 's/dl-cdn.alpinelinux.org/mirrors.tuna.tsinghua.edu.cn/g' /etc/apk/repositories \
     ; fi
 
-COPY docker/ /app
+COPY docker /app
 COPY plush /app/plush
 COPY requirements /app/requirements
 

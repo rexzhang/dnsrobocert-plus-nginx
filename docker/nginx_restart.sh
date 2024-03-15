@@ -1,11 +1,13 @@
 #!/bin/sh
 
-nginx_pid=$(pgrep nginx)
+nginx_pid=$(pgrep /usr/sbin/nginx)
 
 if [ -n "$nginx_pid" ]; then
-    echo "Nginx is running, PID is $nginx_pid"
-    /usr/sbin/nginx -s reload
+    echo "NGINX is running, PID is $nginx_pid, Restarting..."
+    /usr/sbin/nginx -e /logs/nginx/error.log -s reload
+    echo "Restart NGINX done."
 else
-    echo "Nginx is not running"
-    /usr/sbin/nginx
+    echo "NGINX is not running, Starting..."
+    /usr/sbin/nginx -e /logs/nginx/error.log
+    echo "Start NGINX done."
 fi

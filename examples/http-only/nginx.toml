@@ -1,0 +1,7 @@
+[default]
+ssl_cert_domain = "example.com"
+
+[[http_d]]
+server_name = "www.http.only.example.com"
+listen = 10080
+proxy_pass = "http://127.0.0.1:8000"

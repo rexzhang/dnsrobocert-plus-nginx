@@ -16,7 +16,7 @@ while ! $run_plush_generate; do
 done
 
 # start nginx service
-start_nginx_service="/usr/sbin/nginx -e /logs/nginx/error.log"
+start_nginx_service="/app/nginx_restart.sh"
 while ! $start_nginx_service; do
     echo "Start NGINX failed, retrying..."
     sleep 1
