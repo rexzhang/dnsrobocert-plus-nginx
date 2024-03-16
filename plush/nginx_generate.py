@@ -62,6 +62,14 @@ server {
 
     server_name _;
 
+    return 444;
+}
+
+server {
+    $default_listen_ssl
+
+    server_name _;
+
     ssl_ciphers aNULL;
     ssl_certificate data:$$empty;
     ssl_certificate_key data:$$empty;
@@ -566,18 +574,23 @@ class NginxGenerator:
         )
 
     def generate_default_conf_content(self) -> str:
-        http_default_conf_content = ""
+        default_listen_content = ""
         for port in self.http_default_listen:
-            http_default_conf_content += Template(
+            default_listen_content += Template(
                 black_template_default_listen
             ).substitute({"port": port})
+
+        default_listen_ssl_content = ""
         for port in self.http_default_listen_ssl:
-            http_default_conf_content += Template(
+            default_listen_ssl_content += Template(
                 black_template_default_listen_ssl
             ).substitute({"port": port})
 
         return Template(http_default_conf_template).substitute(
-            {"default_listen": http_default_conf_content}
+            {
+                "default_listen": default_listen_content,
+                "default_listen_ssl": default_listen_ssl_content,
+            }
         )
 
     @staticmethod
