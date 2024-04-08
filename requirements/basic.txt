@@ -1,4 +1,10 @@
 dnsrobocert==3.25.0
 
+# CLI
 click
+# Config file
 pydantic>=2.0.0
+# background task
+schedule
+python-daemon
+fasteners

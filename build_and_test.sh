@@ -15,6 +15,7 @@ read -r -s -k '?Press any key to continue. startup container...'
 mkdir /tmp/logs
 docker run -dit --restart unless-stopped \
   -u 501:20 -p 8000:18000 -p 443:10443 \
+  -e TZ=Asia/Shanghai -e T12F_STAGE=ALPHA\
   -v $(pwd)/examples/http-only:/config \
   -v /tmp:/data \
   -v /tmp/logs:/logs \

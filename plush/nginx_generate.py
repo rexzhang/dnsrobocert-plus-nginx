@@ -7,12 +7,12 @@ from string import Template
 import pydantic
 
 from plush.constants import (
-    DEFAULT_HTTP_PORT,
-    DEFAULT_HTTPS_PORT,
-    DEFAULT_NGINX_HTTP_CONF,
-    DEFAULT_NGINX_HTTP_DEFAULT_CONF,
-    DEFAULT_NGINX_STREAM_CONF,
-    DEFAULT_SSL_FILE_DIR,
+    NGINX_HTTP_PORT,
+    NGINX_HTTPS_PORT,
+    NGINX_HTTP_CONF,
+    NGINX_HTTP_DEFAULT_CONF,
+    NGINX_STREAM_CONF,
+    DNSROBOCERT_SSL_FILE_DIR,
 )
 
 logger = getLogger(__name__)
@@ -180,13 +180,13 @@ class Default(pydantic.BaseModel):
 class ServerAbc(pydantic.BaseModel):
     enable: bool = True
 
-    listen: int = None
-    listen_ssl: int = None
+    listen: int | None = None
+    listen_ssl: int | None = None
 
-    ssl_cert_domain: str = None
+    ssl_cert_domain: str | None = None
 
-    upstream_name: str = None
-    upstream_server: str = None
+    upstream_name: str | None = None
+    upstream_server: str | None = None
 
 
 class HTTPD(ServerAbc):
@@ -298,7 +298,7 @@ class GenerateOneServerAbc:
 
         return Template(block_template_ssl).substitute(
             {
-                "ssl_path_root": Path(DEFAULT_SSL_FILE_DIR)
+                "ssl_path_root": Path(DNSROBOCERT_SSL_FILE_DIR)
                 .joinpath(ssl_cert_domain)
                 .as_posix()
             }
@@ -500,8 +500,8 @@ class NginxGenerator:
 
     config: Config
 
-    http_default_listen = {DEFAULT_HTTP_PORT}
-    http_default_listen_ssl = {DEFAULT_HTTPS_PORT}
+    http_default_listen = {NGINX_HTTP_PORT}
+    http_default_listen_ssl = {NGINX_HTTPS_PORT}
 
     def __init__(self, config_nginx_toml: str, nginx_conf_dir: str):
         self.CONFIG_NGINX_TOML = config_nginx_toml
@@ -547,7 +547,7 @@ class NginxGenerator:
         # generate http.conf
         self.generate_conf_file(
             conf_filename=Path(self.NGINX_CONF_DIR)
-            .joinpath(DEFAULT_NGINX_HTTP_CONF)
+            .joinpath(NGINX_HTTP_CONF)
             .as_posix(),
             conf_content=http_conf_content,
         )
@@ -555,7 +555,7 @@ class NginxGenerator:
         # generate http_default.conf
         self.generate_conf_file(
             conf_filename=Path(self.NGINX_CONF_DIR)
-            .joinpath(DEFAULT_NGINX_HTTP_DEFAULT_CONF)
+            .joinpath(NGINX_HTTP_DEFAULT_CONF)
             .as_posix(),
             conf_content=self.generate_default_conf_content(),
         )
@@ -568,7 +568,7 @@ class NginxGenerator:
             )()
         self.generate_conf_file(
             conf_filename=Path(self.NGINX_CONF_DIR)
-            .joinpath(DEFAULT_NGINX_STREAM_CONF)
+            .joinpath(NGINX_STREAM_CONF)
             .as_posix(),
             conf_content=stream_conf_content,
         )

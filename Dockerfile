@@ -1,7 +1,7 @@
-FROM python:3.12-alpine
+ FROM python:3.12-alpine
 
 ARG ENV
-ENV DEPLOY_HOOK="/app/nginx_restart.sh"
+ENV DEPLOY_HOOK="/app/nginx/reload.sh"
 ENV TLDEXTRACT_CACHE_PATH=/data/lexicon_tld_set
 
 RUN if [ "$ENV" = "rex" ]; then echo "Change depends" \

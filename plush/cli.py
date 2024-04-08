@@ -2,8 +2,9 @@ from logging import getLogger
 
 import click
 
-from plush.constants import DEFAULT_CONFIG_NGINX_TOML, DEFAULT_NGINX_CONF_DIR
+from plush.constants import CONFIG_NGINX_TOML, NGINX_CONF_DIR
 from plush.nginx_generate import NginxGenerator
+from plush.worker import worker_main
 
 logger = getLogger(__name__)
 
@@ -14,23 +15,23 @@ def cli(**cli_kwargs):
     return
 
 
-@cli.command("check", help="system checker")
-def runserver(**cli_kwargs):
-    pass
+@cli.command("worker", help="task worker")
+def worker(**cli_kwargs):
+    worker_main()
 
 
 @cli.command("generate", help="nginx *.conf generator")
 @click.option(
     "--config-nginx-toml",
-    default=DEFAULT_CONFIG_NGINX_TOML,
+    default=CONFIG_NGINX_TOML,
     type=str,
-    help=f"[default:{DEFAULT_CONFIG_NGINX_TOML}]",
+    help=f"[default:{CONFIG_NGINX_TOML}]",
 )
 @click.option(
     "--nginx-conf-dir",
-    default=DEFAULT_NGINX_CONF_DIR,
+    default=NGINX_CONF_DIR,
     type=str,
-    help=f"[default:{DEFAULT_NGINX_CONF_DIR}]",
+    help=f"[default:{NGINX_CONF_DIR}]",
 )
 def generator(**cli_kwargs):
     NginxGenerator(**cli_kwargs)()
