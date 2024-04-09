@@ -1,19 +1,13 @@
 import subprocess
-import sys
 import time
 from logging import Formatter, getLogger
 from logging.handlers import WatchedFileHandler
 
-import daemon
-import fasteners
 import schedule
 
 from plush import t12f
-from plush.constants import (
-    WORKER_PID,
-    WORKER_LOG,
-    NGINX_RELOAD_SH,
-)
+from plush.constants import NGINX_RELOAD_SH, WORKER_LOG, WORKER_PID
+from plush.daemon_runner import DaemonRunner
 
 logger = getLogger(__name__)
 logger_formatter = Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
@@ -44,9 +38,9 @@ def task_nginx_reload():
         logger.info(f"stderr: {result.stderr.decode('utf-8')}")
 
 
-def daemon_main():
+def schedule_func(**kwargs):
     _logging_add_file_handler()  # fork, reopen file handle
-    logger.info("Plush worker starting...")
+    logger.info(f"Plush worker starting...pid: {kwargs.get('pid')}")
 
     # init schedule
     if t12f.stage == t12f.Stage.PRODUCTION:
@@ -61,14 +55,4 @@ def daemon_main():
         time.sleep(1)
 
 
-def worker_main():
-    pidfile = fasteners.InterProcessLock(t12f.file(WORKER_PID))
-    try:
-        with daemon.DaemonContext(
-            detach_process=True, pidfile=pidfile, stdout=sys.stdout, stderr=sys.stderr
-        ):
-            daemon_main()
-
-    except PermissionError as e:
-        logger.critical(f"Cannot lock pid; {e}")
-        exit(1)
+schedule_daemon = DaemonRunner(WORKER_PID, schedule_func)

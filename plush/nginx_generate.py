@@ -7,12 +7,12 @@ from string import Template
 import pydantic
 
 from plush.constants import (
-    NGINX_HTTP_PORT,
-    NGINX_HTTPS_PORT,
+    DNSROBOCERT_SSL_FILE_DIR,
     NGINX_HTTP_CONF,
     NGINX_HTTP_DEFAULT_CONF,
+    NGINX_HTTP_PORT,
+    NGINX_HTTPS_PORT,
     NGINX_STREAM_CONF,
-    DNSROBOCERT_SSL_FILE_DIR,
 )
 
 logger = getLogger(__name__)
