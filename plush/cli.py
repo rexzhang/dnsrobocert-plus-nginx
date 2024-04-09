@@ -4,7 +4,7 @@ import click
 
 from plush.constants import CONFIG_NGINX_TOML, NGINX_CONF_DIR
 from plush.nginx_generate import NginxGenerator
-from plush.worker import schedule_daemon
+from plush.worker import ScheduleDaemon
 
 logger = getLogger(__name__)
 
@@ -15,14 +15,19 @@ def cli(**cli_kwargs):
     return
 
 
-@cli.command("worker", help="task worker")
+@cli.group(help="Task Worker")
 def worker(**cli_kwargs):
-    schedule_daemon.start()
+    pass
 
 
-@cli.command("worker_stop", help="task worker")
-def daemon_stop_enter(**cli_kwargs):
-    schedule_daemon.stop()
+@worker.command("start", help="Start Worker")
+def worker_start(**cli_kwargs):
+    ScheduleDaemon().start()
+
+
+@worker.command("stop", help="Stop Worker")
+def worker_stop(**cli_kwargs):
+    ScheduleDaemon().stop()
 
 
 @cli.command("generate", help="nginx *.conf generator")

@@ -55,4 +55,8 @@ def schedule_func(**kwargs):
         time.sleep(1)
 
 
-schedule_daemon = DaemonRunner(WORKER_PID, schedule_func)
+class ScheduleDaemon(DaemonRunner):
+    def __init__(self):
+        super().__init__(
+            pid_file=WORKER_PID, func_daemon=schedule_func, func_cleanup=None
+        )
