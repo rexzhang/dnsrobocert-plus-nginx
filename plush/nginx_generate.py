@@ -250,6 +250,7 @@ class ServerGeneratorAbc:
 
 class GenerateOneServerAbc:
     _values: dict = dict()
+    server: ServerAbc
 
     def __init__(self, server: HTTPD | StreamD, default: Default):
         self.server = server
@@ -314,6 +315,8 @@ class GenerateOneServerAbc:
 
 
 class GenerateOneServerHTTPD(GenerateOneServerAbc):
+    server: HTTPD
+
     def id_str(self) -> str:
         match (
             self.server.server_name is None,
@@ -449,6 +452,8 @@ class GenerateOneServerHTTPD(GenerateOneServerAbc):
 
 
 class GenerateOneServerStreamD(GenerateOneServerAbc):
+    server: StreamD
+
     def id_str(self) -> str:
         return f"stream.d:[{self.server.proxy_pass}]"
 
