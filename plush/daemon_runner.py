@@ -1,5 +1,6 @@
 """
 - https://gist.github.com/rexzhang/fb3f1b9e13a5a78f2dd1e390062690d4
+- https://peps.python.org/pep-3143
 - https://pagure.io/python-daemon/blob/main/f/doc/examples/service-runner.txt
 """
 

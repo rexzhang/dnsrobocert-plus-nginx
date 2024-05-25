@@ -20,6 +20,7 @@ def _logging_add_file_handler():
 
 
 def task_nginx_reload():
+    logger.info("Worker: Reload NGINX ...")
     try:
         result = subprocess.run(
             [
