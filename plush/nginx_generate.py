@@ -23,8 +23,9 @@ listen $port default_server;
 listen [::]:$port default_server;"""
 
 black_template_default_listen_ssl = """
-listen $port ssl http2 default_server;
-listen [::]:$port ssl http2 default_server;"""
+listen $port ssl default_server;
+listen [::]:$port ssl default_server;
+http2 on;"""
 
 block_template_ssl = """
 # SSL certificate
