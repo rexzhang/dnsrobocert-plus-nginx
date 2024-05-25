@@ -25,8 +25,13 @@ done
 
 # start plush worker
 /usr/local/bin/python -m plush worker start
+
 # start dnsrobocert service
-/usr/local/bin/dnsrobocert --config /config/dnsrobocert.yml --directory /data/dnsrobocert
+if [ "$DNSROBOCERT" = "enable" ]; then
+    /usr/local/bin/dnsrobocert --config /config/dnsrobocert.yml --directory /data/dnsrobocert;
+else
+    python;
+fi
 
 # for dev
 if [ "$ENV" = "rex" ]; then python; fi

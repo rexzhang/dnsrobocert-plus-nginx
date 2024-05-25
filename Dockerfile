@@ -3,6 +3,7 @@
 ARG ENV
 ENV DEPLOY_HOOK="/app/nginx/reload.sh"
 ENV TLDEXTRACT_CACHE_PATH=/data/lexicon_tld_set
+ENV DNSROBOCERT="enable"
 
 RUN if [ "$ENV" = "rex" ]; then echo "Change depends" \
     && pip config set global.index-url http://192.168.200.26:13141/root/pypi/+simple \
