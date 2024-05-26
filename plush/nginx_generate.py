@@ -374,11 +374,11 @@ class GenerateOneServerHTTPD(GenerateOneServerAbc):
                 listen = (
                     f"listen {self.server.listen}; listen [::]:{self.server.listen};"
                 )
-                listen_ssl = f"listen {self.server.listen_ssl} ssl http2; listen [::]:{self.server.listen_ssl} ssl http2;"  # noqa E501
+                listen_ssl = f"listen {self.server.listen_ssl} ssl; listen [::]:{self.server.listen_ssl} ssl; http2 on;"  # noqa E501
 
             case True, False:
                 listen = f"listen {self.server.listen};"
-                listen_ssl = f"listen {self.server.listen_ssl} ssl http2;"
+                listen_ssl = f"listen {self.server.listen_ssl} ssl; http2 on;"
 
             case False, True:
                 listen = (
