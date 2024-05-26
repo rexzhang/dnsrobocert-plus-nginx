@@ -1,4 +1,4 @@
- FROM python:3.12-alpine
+FROM python:3.12-alpine
 
 ARG ENV
 ENV DEPLOY_HOOK="/app/nginx/reload.sh"
@@ -19,7 +19,7 @@ RUN \
     # install depends ---
     apk add --no-cache --virtual .build-deps build-base libffi-dev \
     # -- for nginx
-    && apk add nginx nginx-mod-stream nginx-mod-http-brotli \
+    && apk add nginx nginx-mod-stream nginx-mod-http-brotli nginx-mod-http-zstd \
     && mv /etc/nginx/nginx.conf /etc/nginx/nginx.conf.orig \
     && mv /app/nginx/nginx.conf /etc/nginx \
     && chmod 777 -R /var/lib/nginx \

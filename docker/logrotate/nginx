@@ -1,0 +1,7 @@
+/logs/nginx/*.log {
+        missingok
+        sharedscripts
+        postrotate
+                /usr/sbin/nginx -s reopen
+        endscript
+}
