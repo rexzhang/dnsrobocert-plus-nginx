@@ -31,6 +31,7 @@ rm -f /tmp/plush-worker.pid
 if [ "$DNSROBOCERT" = "enable" ]; then
     /usr/local/bin/dnsrobocert --config /config/dnsrobocert.yml --directory /data/dnsrobocert;
 else
+    echo "ENV: DNSROBOCERT is not enable";
     python;
 fi
 
