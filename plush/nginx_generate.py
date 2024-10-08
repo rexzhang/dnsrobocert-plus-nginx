@@ -26,7 +26,7 @@ block_template_default_listen_ssl = """
 listen $port ssl default_server;
 listen [::]:$port ssl default_server;"""
 
-block_template_default_listen_ssl = """
+block_template_default_listen_ssl_http2_on = """
 http2 on;"""
 
 block_template_ssl = """
@@ -594,7 +594,7 @@ class NginxGenerator:
                 block_template_default_listen_ssl
             ).substitute({"port": port})
         if default_listen_ssl_content:  # TODO: global value/constant
-            default_listen_ssl_content += block_template_default_listen_ssl
+            default_listen_ssl_content += block_template_default_listen_ssl_http2_on
 
         return Template(http_default_conf_template).substitute(
             {
