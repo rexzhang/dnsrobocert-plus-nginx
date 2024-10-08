@@ -24,6 +24,7 @@ while ! $start_nginx_service; do
 done
 
 # start plush worker
+rm -f /tmp/plush-worker.pid
 /usr/local/bin/python -m plush worker start
 
 # start dnsrobocert service
