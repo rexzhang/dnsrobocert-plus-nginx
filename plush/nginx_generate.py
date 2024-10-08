@@ -18,13 +18,15 @@ from plush.constants import (
 logger = getLogger(__name__)
 
 
-black_template_default_listen = """
+block_template_default_listen = """
 listen $port default_server;
 listen [::]:$port default_server;"""
 
-black_template_default_listen_ssl = """
+block_template_default_listen_ssl = """
 listen $port ssl default_server;
-listen [::]:$port ssl default_server;
+listen [::]:$port ssl default_server;"""
+
+block_template_default_listen_ssl = """
 http2 on;"""
 
 block_template_ssl = """
@@ -583,14 +585,16 @@ class NginxGenerator:
         default_listen_content = ""
         for port in self.http_default_listen:
             default_listen_content += Template(
-                black_template_default_listen
+                block_template_default_listen
             ).substitute({"port": port})
 
         default_listen_ssl_content = ""
         for port in self.http_default_listen_ssl:
             default_listen_ssl_content += Template(
-                black_template_default_listen_ssl
+                block_template_default_listen_ssl
             ).substitute({"port": port})
+        if default_listen_ssl_content:  # TODO: global value/constant
+            default_listen_ssl_content += block_template_default_listen_ssl
 
         return Template(http_default_conf_template).substitute(
             {
