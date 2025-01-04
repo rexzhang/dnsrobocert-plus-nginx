@@ -152,7 +152,7 @@ stream_conf_template_main_no_ssl = """
 $block_upstream
 server {
     # $comment
-    listen $listen;
+    listen $listen; listen [::]:$listen;
 
     $values
 
@@ -164,7 +164,7 @@ stream_conf_template_main_only_ssl = """
 $block_upstream
 server {
     # $comment
-    listen $listen_ssl ssl;
+    listen $listen_ssl ssl; listen [::]:$listen_ssl ssl;
 
     $values
 
