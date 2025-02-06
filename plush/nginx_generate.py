@@ -308,8 +308,7 @@ class GenerateOneServerAbc:
             }
         )
 
-    @staticmethod
-    def id_str() -> str:
+    def id_str(self) -> str:
         raise NotImplementedError
 
     def generate(self) -> str:
