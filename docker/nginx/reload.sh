@@ -1,6 +1,7 @@
 #!/bin/sh
 
-nginx_pid=$(pgrep /usr/sbin/nginx)
+# 在 macOS 的 otbstack 中 `pgrep /usr/sbin/nginx` 返回为空
+nginx_pid=$(pgrep nginx)
 
 if [ -n "$nginx_pid" ]; then
     echo "NGINX is running, PID is $nginx_pid, Reloading..."

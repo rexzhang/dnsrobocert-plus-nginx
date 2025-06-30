@@ -15,7 +15,7 @@
 
 ```shell
 docker pull ray1ex/dnsrobocert-plus-nginx:latest
-docker run -dit --restart unless-stopped \ 
+docker run -dit --restart unless-stopped \
   -u 1000:1000 \
   -p 80:10080 -p 443:10443 -p 22:10022 \
   -v /your/path/config:/config \
@@ -95,11 +95,18 @@ Please `http2` turn off all services under the same port, which is a feature of 
 
 ## debug
 
+### `nginx.toml` Parser
+
 ```shell
 python -m plush generate --config-nginx-toml nginx.toml --nginx-conf-dir /tmp
+```
+
+### Test logrotate
+
+```shell
+logrotate --debug /etc/logrotate.conf
 ```
 
 ## TODO
 
 - 统一日志输出
-- 自动重新装载nginx

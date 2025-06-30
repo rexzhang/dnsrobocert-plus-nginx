@@ -1,33 +1,29 @@
 FROM python:3.13-alpine
 
-ARG ENV
+ARG BUILD_DEV
 ENV DEPLOY_HOOK="/app/nginx/reload.sh"
 ENV TLDEXTRACT_CACHE_PATH=/data/lexicon_tld_set
 ENV DNSROBOCERT="enable"
 
-RUN if [ "$ENV" = "rex" ]; then echo "Change depends" \
+RUN if [ "$BUILD_DEV" = "rex" ]; then echo "Change depends" \
     && pip config set global.index-url https://proxpi.h.rexzhang.com/index/ \
     && pip config set install.trusted-host proxpi.h.rexzhang.com \
     && sed -i 's/dl-cdn.alpinelinux.org/mirrors.tuna.tsinghua.edu.cn/g' /etc/apk/repositories \
     ; fi
 
-COPY docker /app
-COPY plush /app/plush
-COPY requirements /app/requirements
-
+COPY requirements.d /app/requirements.d
 RUN \
     # install depends ---
     apk add --no-cache --virtual .build-deps build-base libffi-dev \
     # -- for nginx
     && apk add nginx nginx-mod-stream nginx-mod-http-brotli nginx-mod-http-zstd \
-    && mv /etc/nginx/nginx.conf /etc/nginx/nginx.conf.orig \
-    && mv /app/nginx/nginx.conf /etc/nginx \
     && chmod 777 -R /var/lib/nginx \
-    ## && chmod 777 -R /var/log/nginx \
     && mkdir -p /run/nginx \
     && chmod 777 -R /run/nginx \
+    # -- for logrotate
+    && apk add logrotate \
     # -- for py
-    && pip install --no-cache-dir -r /app/requirements/docker.txt \
+    && pip install --no-cache-dir -r /app/requirements.d/docker.txt \
     # cleanup ---
     && apk del .build-deps \
     && rm -rf /root/.cache \
@@ -38,10 +34,17 @@ RUN \
     && mkdir /data \
     && mkdir /logs
 
-WORKDIR /app
+COPY docker /app
+COPY plush /app/plush
+RUN \
+    # nginx
+    cp -f /app/nginx/nginx.conf /etc/nginx \
+    # logrotate
+    && cp -f /app/logrotate/nginx /etc/logrotate.d/nginx 
 
 VOLUME /config
 VOLUME /data
 VOLUME /logs
 
+WORKDIR /app
 CMD /app/entrypoint.sh
