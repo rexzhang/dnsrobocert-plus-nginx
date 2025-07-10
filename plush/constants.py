@@ -2,6 +2,8 @@
 NGINX_CONF_DIR = "/data/nginx"
 NGINX_HTTP_CONF = "http.conf"
 NGINX_HTTP_DEFAULT_CONF = "http_default.conf"
+NGINX_HTTP_UPSTREAM_DIR = "http_upstream.d"
+NGINX_HTTP_SERVER_DIR = "http_server.d"
 NGINX_STREAM_CONF = "stream.conf"
 
 NGINX_HTTP_PORT = 10080

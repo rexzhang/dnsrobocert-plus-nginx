@@ -2,7 +2,6 @@ from dataclasses import asdict, dataclass
 
 from fabric import Connection, task
 
-
 _DOCKER_PULL = "docker pull --platform=linux/amd64"
 _DOCKER_BUILD = "docker buildx build --platform=linux/amd64 --build-arg BUILD_DEV=rex"
 _DOCKER_RUN = "docker run --platform=linux/amd64"
@@ -11,7 +10,7 @@ _DOCKER_RUN = "docker run --platform=linux/amd64"
 @dataclass
 class EnvValue:
     # Target Host
-    DEPLOY_STAGE = "alpha"
+    DEPLOY_STAGE = "dev"
     DEPLOY_SSH_HOST = "192.168.200.31"
     DEPLOY_SSH_PORT = 22
     DEPLOY_SSH_USER = "rex"
@@ -91,7 +90,7 @@ def docker_test(c):
  -e TZ=Asia/Shanghai \
  -e DNSROBOCERT=disable \
  -e T12F_STAGE=ALPHA \
- -v $(pwd)/examples/http-only:/config \
+ -v $(pwd)/examples/nginx.toml:/config/nginx.toml \
  -v /tmp/{ev.CONTAINER_NAME}:/data \
  -v /tmp/{ev.CONTAINER_NAME}:/logs \
  --name {ev.CONTAINER_NAME} \

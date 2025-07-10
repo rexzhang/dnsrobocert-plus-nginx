@@ -6,11 +6,13 @@ from string import Template
 
 import pydantic
 
+from plush.config import HTTPD, Config, Default, ServerAbc, StreamD, Upstream
 from plush.constants import (
     DNSROBOCERT_SSL_FILE_DIR,
     NGINX_HTTP_CONF,
     NGINX_HTTP_DEFAULT_CONF,
     NGINX_HTTP_PORT,
+    NGINX_HTTP_UPSTREAM_DIR,
     NGINX_HTTPS_PORT,
     NGINX_STREAM_CONF,
 )
@@ -147,6 +149,9 @@ block_template_location_custom = """
         $location_content
     }"""
 
+upstream_conf_tempalte = """upstream $upstream_name {
+    $upstream_content
+}"""
 
 stream_conf_template_main_no_ssl = """
 $block_upstream
@@ -176,48 +181,51 @@ server {
 """
 
 
-class Default(pydantic.BaseModel):
-    ssl_cert_domain: str
+class GenerateOneConfAbc:
+    base_path: Path
+    file_name: str
+
+    name: str
+    content: str
+
+    def __init__(self):
+        raise NotImplementedError
+
+    @property
+    def type(self) -> str:
+        raise NotImplementedError
+
+    def generate(self):
+        full_file_name = self.base_path.joinpath(self.file_name).as_posix()
+        message_base = f"Generate {self.type}: [{self.name}] >> [{full_file_name}]"
+
+        logger.info(f"{message_base} ...")
+        try:
+            with open(full_file_name, "w") as f:
+                f.write(self.content)
+
+            logger.info(f"{message_base} ...DONE")
+
+        except OSError as e:
+            logger.critical(f"{message_base} failed, {e}")
+            exit(1)
 
 
-class ServerAbc(pydantic.BaseModel):
-    enable: bool = True
+class GenerateOneUpstreamConf(GenerateOneConfAbc):
+    @property
+    def type(self) -> str:
+        return "Upstream"
 
-    listen: int | None = None
-    listen_ssl: int | None = None
-
-    ssl_cert_domain: str | None = None
-
-    upstream_name: str | None = None
-    upstream_server: str | None = None
-
-
-class HTTPD(ServerAbc):
-    server_name: str
-
-    listen_http2: bool = True
-    listen_ipv6: bool = True
-
-    root_path: str | None = None
-    proxy_pass: str | None = None
-
-    location: dict[str, str] = dict()
-    client_max_body_size: str | None = None
-    support_websocket: bool = False
-    hsts: bool = False
-    hsts_max_age: int = 31536000
-
-
-class StreamD(ServerAbc):
-    comment: str = "---"
-
-    proxy_pass: str
-
-
-class Config(pydantic.BaseModel):
-    default: Default
-    http_d: list[HTTPD]
-    stream_d: list[StreamD] = list()
+    def __init__(self, base_path: Path, upstream: Upstream):
+        self.base_path = base_path
+        self.file_name = f"{upstream.name}.conf"
+        self.name = upstream.name
+        self.content = Template(upstream_conf_tempalte).substitute(
+            {
+                "upstream_name": upstream.name,
+                "upstream_content": upstream.content,
+            }
+        )
 
 
 class ServerGeneratorAbc:
@@ -513,6 +521,9 @@ class NginxGenerator:
     def __init__(self, config_nginx_toml: str, nginx_conf_dir: str):
         self.CONFIG_NGINX_TOML = config_nginx_toml
         self.NGINX_CONF_DIR = nginx_conf_dir
+        self.NGINX_HTTP_UPSTREAM_DIR = Path(self.NGINX_CONF_DIR).joinpath(
+            NGINX_HTTP_UPSTREAM_DIR
+        )
 
     def __call__(self, *args, **kwargs):
         # parse nginx.toml
@@ -533,8 +544,17 @@ class NginxGenerator:
             logger.critical(f"Parse file {self.CONFIG_NGINX_TOML} failed, {e}")
             exit(1)
 
-        # parser http_d
+        # parser/generate http_upstream.d/*.conf
+        if self.config.http_upstream:
+            logger.info(f"Generate {self.NGINX_HTTP_UPSTREAM_DIR}/*.conf ...")
 
+            self.prepair_conf_file_path(path=self.NGINX_HTTP_UPSTREAM_DIR)
+            for http_upstream in self.config.http_upstream:
+                GenerateOneUpstreamConf(
+                    base_path=self.NGINX_HTTP_UPSTREAM_DIR, upstream=http_upstream
+                ).generate()
+
+        # parser http_d
         http_conf_content = ""
         for server in self.config.http_d:
             # http.conf
@@ -567,7 +587,7 @@ class NginxGenerator:
             conf_content=self.generate_default_conf_content(),
         )
 
-        # generate stream.conf
+        # parser/generate stream.conf
         stream_conf_content = ""
         for server in self.config.stream_d:
             stream_conf_content += GenerateOneServerStreamD(
@@ -579,6 +599,22 @@ class NginxGenerator:
             .as_posix(),
             conf_content=stream_conf_content,
         )
+
+    def prepair_conf_file_path(self, path: Path):
+        if not path.exists():
+            path.mkdir(parents=True)
+
+        if not path.is_dir():
+            raise
+
+        for file_path in path.iterdir():
+            if not file_path.is_file() or file_path.suffix != ".conf":
+                continue
+
+            try:
+                file_path.unlink()
+            except Exception as e:
+                print(f"Failed to delete {file_path}. Reason: {e}")
 
     def generate_default_conf_content(self) -> str:
         default_listen_content = ""

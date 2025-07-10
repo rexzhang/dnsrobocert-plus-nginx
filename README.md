@@ -98,7 +98,7 @@ Please `http2` turn off all services under the same port, which is a feature of 
 ### `nginx.toml` Parser
 
 ```shell
-python -m plush generate --config-nginx-toml nginx.toml --nginx-conf-dir /tmp
+python -m plush generate --config-nginx-toml examples/nginx.toml --nginx-conf-dir /tmp
 ```
 
 ### Test logrotate
@@ -110,3 +110,5 @@ logrotate --debug /etc/logrotate.conf
 ## TODO
 
 - 统一日志输出
+- nginx 配置分拆到 http.d/stream.d/upstream.d
+- nginx 启动前尝试验证配置文件

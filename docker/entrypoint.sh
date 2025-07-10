@@ -3,6 +3,7 @@
 # prepare data path
 mkdir -p /data/lexicon_tld_set
 mkdir -p /data/dnsrobocert
+mkdir -p /data/nginx/http_upstream.d
 mkdir -p /data/nginx/http.d
 mkdir -p /data/nginx/stream.d
 mkdir -p /logs/dnsrobocert
@@ -29,10 +30,10 @@ rm -f /tmp/plush-worker.pid
 
 # start dnsrobocert service
 if [ "$DNSROBOCERT" = "enable" ]; then
-    /usr/local/bin/dnsrobocert --config /config/dnsrobocert.yml --directory /data/dnsrobocert;
+    /usr/local/bin/dnsrobocert --config /config/dnsrobocert.yml --directory /data/dnsrobocert
 else
-    echo "ENV: DNSROBOCERT is not enable";
-    python;
+    echo "ENV: DNSROBOCERT is not enable"
+    python
 fi
 
 # for dev
