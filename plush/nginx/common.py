@@ -3,7 +3,7 @@ from logging import getLogger
 from pathlib import Path
 from string import Template
 
-from plush.config import HTTPD, Default, ServerAbc, StreamD
+from plush.config import Common, HttpServer, ServerAbc, StreamServer
 from plush.constants import DNSROBOCERT_SSL_FILE_DIR
 
 logger = getLogger("plush.nginx")
@@ -102,9 +102,11 @@ include /app/nginx/snippets/ssl-params.conf;"""
 class GenerateOneServerConfAbc(GenerateOneConfAbc):
 
     server: ServerAbc
-    default: Default
+    default: Common
 
-    def __init__(self, server: HTTPD | StreamD, default: Default, base_path: Path):
+    def __init__(
+        self, server: HttpServer | StreamServer, default: Common, base_path: Path
+    ):
         self._init_common(name=server.name, enable=server.enable, base_path=base_path)
 
         self.server = server

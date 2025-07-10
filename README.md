@@ -110,5 +110,5 @@ logrotate --debug /etc/logrotate.conf
 ## TODO
 
 - 统一日志输出
-- nginx 配置分拆到 http.d/stream.d/upstream.d
 - nginx 启动前尝试验证配置文件
+- stream 不应该单独处理 upstream

@@ -1,7 +1,7 @@
 from logging import getLogger
 from string import Template
 
-from plush.config import HTTPD
+from plush.config import HttpServer
 from plush.nginx.common import GenerateOneServerConfAbc, server_block_template_upstream
 
 logger = getLogger("plush.nginx")
@@ -89,7 +89,7 @@ block_template_location_custom = """
 
 
 class GenerateOneHttpServerConf(GenerateOneServerConfAbc):
-    server: HTTPD
+    server: HttpServer
 
     @property
     def type(self) -> str:

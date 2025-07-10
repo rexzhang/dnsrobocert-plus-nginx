@@ -2,8 +2,10 @@ dnsrobocert==3.26.1
 
 # CLI
 click
+
 # Config file
-pydantic>=2.0.0
+dataclass-wizard
+
 # background task
 schedule
 python-daemon

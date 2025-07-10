@@ -1,10 +1,7 @@
-import tomllib
 from logging import getLogger
 from pathlib import Path
 
-import pydantic
-
-from plush.config import Config
+from plush.config import Config, load_config
 from plush.constants import (
     NGINX_HTTP_DEFAULT_CONF,
     NGINX_HTTP_PORT,
@@ -48,22 +45,7 @@ class NginxGenerator:
 
     def __call__(self, *args, **kwargs):
         # parse nginx.toml
-        try:
-            with open(self.CONFIG_NGINX_TOML, "rb") as f:
-                config_obj = tomllib.load(f)
-
-        except FileNotFoundError as e:
-            logger.critical(f"Open file {self.CONFIG_NGINX_TOML} failed, {e}")
-            exit(1)
-        except tomllib.TOMLDecodeError as e:
-            logger.critical(f"Parse file {self.CONFIG_NGINX_TOML} failed, {e}")
-            exit(1)
-
-        try:
-            self.config = Config.model_validate(config_obj)
-        except pydantic.ValidationError as e:
-            logger.critical(f"Parse file {self.CONFIG_NGINX_TOML} failed, {e}")
-            exit(1)
+        self.config = load_config(self.CONFIG_NGINX_TOML)
 
         # parser/generate http_upstream.d/*.conf
         if self.config.http_upstream:
@@ -77,14 +59,14 @@ class NginxGenerator:
                 ).generate()
 
         # parser/generate http_server.d/*.conf
-        if self.config.http_d:
+        if self.config.http_server:
             logger.info(f"Generate {self.NGINX_HTTP_SERVER_DIR}/*.conf ...")
 
             self.prepair_conf_file_path(path=self.NGINX_HTTP_SERVER_DIR)
-            for http_server in self.config.http_d:
+            for http_server in self.config.http_server:
                 GenerateOneHttpServerConf(
                     server=http_server,
-                    default=self.config.default,
+                    default=self.config.common,
                     base_path=self.NGINX_HTTP_SERVER_DIR,
                 ).generate()
 
@@ -97,14 +79,14 @@ class NginxGenerator:
         ).generate()
 
         # parser/generate stram_server.d/*.conf
-        if self.config.stream_d:
+        if self.config.stream_server:
             logger.info(f"Generate {self.NGINX_STREAM_SERVER_DIR}/*.conf ...")
 
             self.prepair_conf_file_path(path=self.NGINX_STREAM_SERVER_DIR)
-            for stream_server in self.config.stream_d:
+            for stream_server in self.config.stream_server:
                 GenerateOneStreamServerConf(
                     server=stream_server,
-                    default=self.config.default,
+                    default=self.config.common,
                     base_path=self.NGINX_STREAM_SERVER_DIR,
                 ).generate()
 

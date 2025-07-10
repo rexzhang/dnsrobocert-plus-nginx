@@ -1,7 +1,7 @@
 from logging import getLogger
 from string import Template
 
-from plush.config import StreamD
+from plush.config import StreamServer
 from plush.nginx.common import GenerateOneServerConfAbc, server_block_template_upstream
 
 logger = getLogger(__name__)
@@ -34,7 +34,7 @@ server {
 
 
 class GenerateOneStreamServerConf(GenerateOneServerConfAbc):
-    server: StreamD
+    server: StreamServer
 
     @property
     def type(self) -> str:

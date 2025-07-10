@@ -1,19 +1,29 @@
-import pydantic
+import tomllib
+from dataclasses import dataclass, field
+from logging import getLogger
+from typing import Annotated
+from dataclass_wizard import JSONWizard
+from dataclass_wizard.v1 import Alias
+
+logger = getLogger(__name__)
 
 
-class Default(pydantic.BaseModel):  # => Common
+@dataclass
+class Common:
     ssl_cert_domain: str
 
 
-class Upstream(pydantic.BaseModel):
+@dataclass
+class Upstream:
     # 配置文件兼容 http upstream 和 stream upstream
     enable: bool = True
 
-    name: str
-    content: str
+    name: str = ""
+    content: str = ""
 
 
-class ServerAbc(pydantic.BaseModel):
+@dataclass
+class ServerAbc:
     enable: bool = True
 
     listen: int | None = None
@@ -25,15 +35,16 @@ class ServerAbc(pydantic.BaseModel):
     upstream_server: str | None = None
 
 
-class HTTPD(ServerAbc):
-    server_name: str
+@dataclass
+class HttpServer(ServerAbc):
+    server_name: str = ""
 
     listen_http2: bool = True
     listen_ipv6: bool = True
 
     root_path: str | None = None
     proxy_pass: str | None = None
-    location: dict[str, str] = dict()
+    location: dict[str, str] = field(default_factory=dict)
 
     client_max_body_size: str | None = None
     support_websocket: bool = False
@@ -45,10 +56,11 @@ class HTTPD(ServerAbc):
         return self.server_name
 
 
-class StreamD(ServerAbc):
+@dataclass
+class StreamServer(ServerAbc):
     comment: str = "---"
 
-    proxy_pass: str
+    proxy_pass: str = ""
 
     @property
     def name(self) -> str:
@@ -65,10 +77,41 @@ class StreamD(ServerAbc):
         return result
 
 
-class Config(pydantic.BaseModel):
-    default: Default
+@dataclass
+class Config(JSONWizard):
+    class _(JSONWizard.Meta):
+        v1 = True
 
-    http_upstream: list[Upstream] = list()
-    http_d: list[HTTPD]  # -> http_server
+    common: Annotated[Common, Alias("default")]  # => common
 
-    stream_d: list[StreamD] = list()  # -> stream_server
+    http_upstream: list[Upstream] = field(default_factory=list)
+    http_server: Annotated[list[HttpServer], Alias("http_d")] = field(
+        default_factory=list
+    )
+
+    stream_server: Annotated[list[StreamServer], Alias("stream_d")] = field(
+        default_factory=list
+    )
+
+
+def load_config(toml_file: str) -> Config:
+    # parse nginx.toml
+    try:
+        with open(toml_file, "rb") as f:
+            config_obj = tomllib.load(f)
+
+    except FileNotFoundError as e:
+        logger.critical(f"Open file {toml_file} failed, {e}")
+        exit(1)
+    except tomllib.TOMLDecodeError as e:
+        logger.critical(f"Parse file {toml_file} failed, {e}")
+        exit(1)
+
+    # convert to Config
+    try:
+        config = Config.from_dict(config_obj)
+    except TypeError as e:
+        logger.critical(f"Parse file {toml_file} failed, {e}")
+        exit(1)
+
+    return config
