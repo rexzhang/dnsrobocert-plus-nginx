@@ -2,7 +2,7 @@ from logging import getLogger
 from string import Template
 
 from plush.config import HttpServer
-from plush.nginx.common import GenerateOneServerConfAbc, server_block_template_upstream
+from plush.nginx.common import GenerateOneServerConfAbc
 
 logger = getLogger("plush.nginx")
 
@@ -32,7 +32,6 @@ server {
 """
 
 http_conf_template_main_only_https = """
-$block_upstream
 server {
     server_name $server_name;
     $listen_ssl
@@ -45,7 +44,6 @@ server {
 """
 
 http_conf_template_main_http_and_https = """
-$block_upstream
 server {
     server_name $server_name;
     $listen
@@ -175,16 +173,6 @@ class GenerateOneHttpServerConf(GenerateOneServerConfAbc):
         else:
             block_hsts = ""
 
-        if self.server.upstream_name and self.server.upstream_server:
-            block_upstream = Template(server_block_template_upstream).substitute(
-                {
-                    "upstream_name": self.server.upstream_name,
-                    "upstream_server": self.server.upstream_server,
-                }
-            )
-        else:
-            block_upstream = ""
-
         result = main_template.substitute(
             {
                 "values": self.generate_values_list_str(),
@@ -193,7 +181,7 @@ class GenerateOneHttpServerConf(GenerateOneServerConfAbc):
                 "listen_ssl": listen_ssl,
                 "block_ssl": self.generate_block_ssl(),
                 "block_hsts": block_hsts,
-                "block_upstream": block_upstream,
+                # "block_upstream": block_upstream,
                 "locations": locations_str,
             }
         )

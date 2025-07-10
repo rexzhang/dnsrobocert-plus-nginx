@@ -1,7 +1,7 @@
 import tomllib
 from dataclasses import dataclass, field
 from logging import getLogger
-from typing import Annotated
+
 from dataclass_wizard import JSONWizard
 from dataclass_wizard.v1 import Alias
 
@@ -30,9 +30,6 @@ class ServerAbc:
     listen_ssl: int | None = None
 
     ssl_cert_domain: str | None = None
-
-    upstream_name: str | None = None
-    upstream_server: str | None = None
 
 
 @dataclass
@@ -82,15 +79,15 @@ class Config(JSONWizard):
     class _(JSONWizard.Meta):
         v1 = True
 
-    common: Annotated[Common, Alias("default")]  # => common
+    common: Common = Alias(load=["common", "default"])
 
     http_upstream: list[Upstream] = field(default_factory=list)
-    http_server: Annotated[list[HttpServer], Alias("http_d")] = field(
-        default_factory=list
+    http_server: list[HttpServer] = Alias(
+        load=["http_server", "http_d"], default_factory=list
     )
 
-    stream_server: Annotated[list[StreamServer], Alias("stream_d")] = field(
-        default_factory=list
+    stream_server: list[StreamServer] = Alias(
+        load=["stream_server", "stream_d"], default_factory=list
     )
 
 

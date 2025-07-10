@@ -55,10 +55,10 @@ Ref：
 ### `/your/path/config/nginx.toml`
 
 ```toml
-[default]
+[common]
 ssl_cert_domain = "example.com"
 
-[[http_d]]
+[[http_server]]
 server_name = "www.example.com"
 listen = 10080
 listen_ssl = 10443
@@ -70,7 +70,7 @@ listen = 10080
 listen_ssl = 10443
 root_path = "root /mnt/www/www2.example.com"
 
-[[stream_d]]
+[[stream_server]]
 comment = "ssh"
 listen = 10022
 proxy_pass = "192.168.1.1:22"
@@ -111,4 +111,3 @@ logrotate --debug /etc/logrotate.conf
 
 - 统一日志输出
 - nginx 启动前尝试验证配置文件
-- stream 不应该单独处理 upstream

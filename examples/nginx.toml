@@ -1,7 +1,7 @@
-[default]
+[common]
 ssl_cert_domain = "example.com"
 
-[[http_d]]
+[[http_server]]
 server_name = "www.example.com"
 listen = 10080
 listen_ssl = 10443
@@ -9,31 +9,31 @@ proxy_pass = "http://127.0.0.1:8000"
 
 client_max_body_size = "100m"
 
-[[http_d]]
+[[http_server]]
 server_name = "www.port.error"
 proxy_pass = "http://127.0.0.1:8000"
 
-[[http_d]]
+[[http_server]]
 server_name = "www.http.only.example.com"
 listen = 10080
 proxy_pass = "http://127.0.0.1:8000"
 
-[[http_d]]
+[[http_server]]
 server_name = "www.https.only.example.com"
 listen = 10443
 proxy_pass = "http://127.0.0.1:8000"
 
-[[http_d]]
+[[http_server]]
 server_name = "www.special.port.example.com"
 listen_ssl = 55555
 proxy_pass = "http://127.0.0.1:8000"
 
-[[http_d]]
+[[http_server]]
 server_name = "www.mapping.root.com"
 listen_ssl = 10443
 root_path = "/var/www"
 
-[[http_d]]
+[[http_server]]
 server_name = "www.custom.root.location.example.com"
 listen_ssl = 10443
 proxy_pass = "http://127.0.0.1:8000"
@@ -42,7 +42,7 @@ location."/" = """
 proxy_pass $proxy_pass;
 """
 
-[[http_d]]
+[[http_server]]
 server_name = "www.more.location.example.com"
 listen_ssl = 10443
 proxy_pass = "http://127.0.0.1:8000"
@@ -62,8 +62,14 @@ content = """
     server 127.0.0.1:8082;
 """
 
-[[http_d]]
-server_name = "custom.upstream.example.com"
+[[http_server]]
+server_name = "http.upstream.example.com"
+listen = 10080
+proxy_pass = "upstream_websocket"
+support_websocket = true
+
+[[http_server]]
+server_name = "http.upstream.in.path.example.com"
 listen = 10080
 proxy_pass = "http://127.0.0.1:8000"
 
@@ -73,25 +79,25 @@ location."/ws" = """
 
 support_websocket = true
 
-[[http_d]]
+[[http_server]]
 server_name = "www.disable.http2.example.com"
 listen_ssl = 10443
 listen_http2 = false
 root_path = "/var/www"
 
-[[http_d]]
+[[http_server]]
 server_name = "hsts.example.com"
 listen = 10080
 listen_ssl = 10443
 proxy_pass = "http://127.0.0.1:8000"
 hsts = true
 
-[[stream_d]]
+[[stream_server]]
 comment = "ssh"
 listen = 10022
 proxy_pass = "192.168.1.1:22"
 
-[[stream_d]]
+[[stream_server]]
 comment = "git"
 listen = 12222
 upstream_name = "ssh_upstream_test"

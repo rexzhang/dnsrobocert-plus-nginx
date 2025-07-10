@@ -86,12 +86,6 @@ class GenerateOneConfAbc:
             exit(1)
 
 
-server_block_template_upstream = """
-# upstream server define
-upstream $upstream_name {
-    server $upstream_server;
-}"""
-
 server_block_template_ssl = """
 # SSL certificate
 ssl_certificate     $ssl_path_root/fullchain.pem;

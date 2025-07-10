@@ -2,11 +2,10 @@ from logging import getLogger
 from string import Template
 
 from plush.config import StreamServer
-from plush.nginx.common import GenerateOneServerConfAbc, server_block_template_upstream
+from plush.nginx.common import GenerateOneServerConfAbc
 
 logger = getLogger(__name__)
 stream_conf_template_main_no_ssl = """
-$block_upstream
 server {
     # $comment
     listen $listen; listen [::]:$listen;
@@ -18,7 +17,6 @@ server {
 """
 
 stream_conf_template_main_only_ssl = """
-$block_upstream
 server {
     # $comment
     listen $listen_ssl ssl; listen [::]:$listen_ssl ssl;
@@ -45,16 +43,6 @@ class GenerateOneStreamServerConf(GenerateOneServerConfAbc):
         return f"{self.type}: [{self.server.proxy_pass}]"
 
     def _generate_conf_content(self) -> str:
-        if self.server.upstream_name and self.server.upstream_server:
-            block_upstream = Template(server_block_template_upstream).substitute(
-                {
-                    "upstream_name": self.server.upstream_name,
-                    "upstream_server": self.server.upstream_server,
-                }
-            )
-        else:
-            block_upstream = ""
-
         result = ""
         if isinstance(self.server.listen, int):
             result += Template(stream_conf_template_main_no_ssl).substitute(
@@ -63,7 +51,6 @@ class GenerateOneStreamServerConf(GenerateOneServerConfAbc):
                     "values": self.generate_values_list_str(),
                     "listen": self.server.listen,
                     "proxy_pass": self.server.proxy_pass,
-                    "block_upstream": block_upstream,
                 }
             )
 
@@ -80,7 +67,6 @@ class GenerateOneStreamServerConf(GenerateOneServerConfAbc):
                     "listen_ssl": self.server.listen_ssl,
                     "block_ssl": block_ssl_str,
                     "proxy_pass": self.server.proxy_pass,
-                    "block_upstream": block_upstream,
                 }
             )
 
