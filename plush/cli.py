@@ -3,7 +3,7 @@ from logging import getLogger
 import click
 
 from plush.constants import CONFIG_NGINX_TOML, NGINX_CONF_DIR
-from plush.nginx_generate import NginxGenerator
+from plush.nginx import NginxGenerator
 from plush.worker import ScheduleDaemon
 
 logger = getLogger(__name__)

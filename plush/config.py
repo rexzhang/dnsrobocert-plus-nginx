@@ -1,12 +1,14 @@
 import pydantic
 
 
-class Default(pydantic.BaseModel):
+class Default(pydantic.BaseModel):  # => Common
     ssl_cert_domain: str
 
 
 class Upstream(pydantic.BaseModel):
     # 配置文件兼容 http upstream 和 stream upstream
+    enable: bool = True
+
     name: str
     content: str
 
@@ -38,11 +40,29 @@ class HTTPD(ServerAbc):
     hsts: bool = False
     hsts_max_age: int = 31536000
 
+    @property
+    def name(self) -> str:
+        return self.server_name
+
 
 class StreamD(ServerAbc):
     comment: str = "---"
 
     proxy_pass: str
+
+    @property
+    def name(self) -> str:
+        data = list()
+        if self.listen:
+            data.append(f"p{self.listen}")
+        if self.listen_ssl:
+            data.append(f"p{self.listen}")
+
+        result = "_".join(data)
+        if not result:
+            result = "?"
+
+        return result
 
 
 class Config(pydantic.BaseModel):
