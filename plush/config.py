@@ -56,7 +56,7 @@ class StreamD(ServerAbc):
         if self.listen:
             data.append(f"p{self.listen}")
         if self.listen_ssl:
-            data.append(f"p{self.listen}")
+            data.append(f"p{self.listen_ssl}")
 
         result = "_".join(data)
         if not result:
