@@ -3,16 +3,24 @@ from dataclasses import dataclass, field
 from logging import getLogger
 
 from dataclass_wizard import JSONWizard
-from dataclass_wizard.v1 import Alias
+from dataclass_wizard.v1 import Alias, AliasPath
 
-from .constants import NGINX_HTTP_DEFAULT_LISTEN, NGINX_HTTP_DEFAULT_LISTEN_SSL
+from .constants import (
+    NGINX_HTTP_DEFAULT_LISTEN,
+    NGINX_HTTP_DEFAULT_LISTEN_SSL,
+    DNSROBOCERT_SSL_FILE_DIR,
+)
 
 logger = getLogger(__name__)
 
 
 @dataclass
-class Common:
-    ssl_cert_domain: str
+class SSLCert:
+    pem_file_base_path: str = DNSROBOCERT_SSL_FILE_DIR
+
+    default_ssl_cert_domain: str = AliasPath(
+        load="ssl_cert_domain", default_factory=str
+    )
 
 
 @dataclass
@@ -91,7 +99,7 @@ class Config(JSONWizard):
     class _(JSONWizard.Meta):
         v1 = True
 
-    common: Common = Alias(load=["common", "default"])
+    ssl_cert: SSLCert = Alias(load=["ssl_cert", "common", "default"])
 
     http_default: HttpDeafult = field(default_factory=HttpDeafult)
     http_upstream: list[Upstream] = field(default_factory=list)

@@ -1,5 +1,6 @@
-[common]
-ssl_cert_domain = "example.com"
+[ssl_cert]
+pem_file_base_path = "/data/dnsrobocert/live"
+default_ssl_cert_domain = "example.com"
 
 [[http_server]]
 server_name = "www.example.com"

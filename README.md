@@ -98,7 +98,7 @@ Please `http2` turn off all services under the same port, which is a feature of 
 ### `nginx.toml` Parser
 
 ```shell
-python -m plush generate --config-nginx-toml examples/nginx.toml --nginx-conf-dir /tmp
+python -m plush generate --nginx-conf-dir /tmp --config-nginx-toml examples/nginx.toml
 ```
 
 ### Test logrotate

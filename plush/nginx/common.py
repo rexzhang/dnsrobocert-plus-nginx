@@ -3,8 +3,8 @@ from logging import getLogger
 from pathlib import Path
 from string import Template
 
-from plush.config import Common, HttpServer, ServerAbc, StreamServer
-from plush.constants import DNSROBOCERT_SSL_FILE_DIR
+from plush.config import SSLCert, HttpServer, ServerAbc, StreamServer
+
 
 logger = getLogger("plush.nginx")
 
@@ -88,30 +88,29 @@ class GenerateOneConfAbc:
 
 server_block_template_ssl = """
 # SSL certificate
-ssl_certificate     $ssl_path_root/fullchain.pem;
-ssl_certificate_key $ssl_path_root/privkey.pem;
+ssl_certificate     $ssl_pem_file_base_path/fullchain.pem;
+ssl_certificate_key $ssl_pem_file_base_path/privkey.pem;
 include /app/nginx/snippets/ssl-params.conf;"""
 
 
 class GenerateOneServerConfAbc(GenerateOneConfAbc):
-
     server: ServerAbc
-    default: Common
+    ssl_cert: SSLCert
 
     def __init__(
-        self, server: HttpServer | StreamServer, default: Common, base_path: Path
+        self, server: HttpServer | StreamServer, ssl_cert: SSLCert, base_path: Path
     ):
         self._init_common(name=server.name, enable=server.enable, base_path=base_path)
 
         self.server = server
-        self.default = default
+        self.ssl_cert = ssl_cert
 
         if server.proxy_pass:
             self.update_value(k="proxy_pass", v=server.proxy_pass)
 
     def generate_block_ssl(self) -> str:
         if self.server.ssl_cert_domain is None:
-            ssl_cert_domain = self.default.ssl_cert_domain
+            ssl_cert_domain = self.ssl_cert.default_ssl_cert_domain
         else:
             ssl_cert_domain = self.server.ssl_cert_domain
 
@@ -121,7 +120,7 @@ class GenerateOneServerConfAbc(GenerateOneConfAbc):
 
         return Template(server_block_template_ssl).substitute(
             {
-                "ssl_path_root": Path(DNSROBOCERT_SSL_FILE_DIR)
+                "ssl_pem_file_base_path": Path(self.ssl_cert.pem_file_base_path)
                 .joinpath(ssl_cert_domain)
                 .as_posix()
             }

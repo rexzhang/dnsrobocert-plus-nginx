@@ -72,7 +72,7 @@ class NginxGenerator:
             for http_server in self.config.http_server:
                 GenerateOneHttpServerConf(
                     server=http_server,
-                    default=self.config.common,
+                    ssl_cert=self.config.ssl_cert,
                     base_path=self.NGINX_HTTP_SERVER_DIR,
                 ).generate()
 
@@ -95,7 +95,7 @@ class NginxGenerator:
             for stream_server in self.config.stream_server:
                 GenerateOneStreamServerConf(
                     server=stream_server,
-                    default=self.config.common,
+                    ssl_cert=self.config.ssl_cert,
                     base_path=self.NGINX_STREAM_SERVER_DIR,
                 ).generate()
 

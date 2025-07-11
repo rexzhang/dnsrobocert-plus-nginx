@@ -107,7 +107,6 @@ def docker_recreate_container(c):
     )
 
     docker_run_cmd = f"""docker run -dit --restart unless-stopped \
- --dns 192.168.200.12 \
  -u 1000:1000 \
  -p 80:10080 -p 443:10443 -p 636:10636 \
  --env-file container.env \
