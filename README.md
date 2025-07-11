@@ -55,8 +55,8 @@ Ref：
 ### `/your/path/config/nginx.toml`
 
 ```toml
-[common]
-ssl_cert_domain = "example.com"
+[ssl_cert]
+default_ssl_cert_domain = "example.com"
 
 [[http_server]]
 server_name = "www.example.com"
