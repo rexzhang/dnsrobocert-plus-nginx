@@ -97,9 +97,15 @@ comment = "ssh"
 listen = 10022
 proxy_pass = "192.168.1.1:22"
 
+[[stream_upstream]]
+name = "ssh_upstream_test"
+content = """
+    least_conn;
+    server 127.0.0.1:8081;
+    server 127.0.0.1:8082;
+"""
+
 [[stream_server]]
 comment = "git"
 listen = 12222
-upstream_name = "ssh_upstream_test"
-upstream_server = "test.lan:22"
 proxy_pass = "ssh_upstream_test"
