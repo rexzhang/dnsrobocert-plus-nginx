@@ -5,6 +5,8 @@ from logging import getLogger
 from dataclass_wizard import JSONWizard
 from dataclass_wizard.v1 import Alias
 
+from .constants import NGINX_HTTP_DEFAULT_LISTEN, NGINX_HTTP_DEFAULT_LISTEN_SSL
+
 logger = getLogger(__name__)
 
 
@@ -14,12 +16,22 @@ class Common:
 
 
 @dataclass
+class HttpDeafult:
+    http_default_listen: list[int] = field(
+        default_factory=lambda: [NGINX_HTTP_DEFAULT_LISTEN]
+    )
+    http_default_listen_ssl: list[int] = field(
+        default_factory=lambda: [NGINX_HTTP_DEFAULT_LISTEN_SSL]
+    )
+
+
+@dataclass
 class Upstream:
     # 配置文件兼容 http upstream 和 stream upstream
     enable: bool = True
 
-    name: str = ""
-    content: str = ""
+    name: str = field(default_factory=str)
+    content: str = field(default_factory=str)
 
 
 @dataclass
@@ -34,7 +46,7 @@ class ServerAbc:
 
 @dataclass
 class HttpServer(ServerAbc):
-    server_name: str = ""
+    server_name: str = field(default_factory=str)
 
     listen_http2: bool = True
     listen_ipv6: bool = True
@@ -57,7 +69,7 @@ class HttpServer(ServerAbc):
 class StreamServer(ServerAbc):
     comment: str = "---"
 
-    proxy_pass: str = ""
+    proxy_pass: str = field(default_factory=str)
 
     @property
     def name(self) -> str:
@@ -81,11 +93,13 @@ class Config(JSONWizard):
 
     common: Common = Alias(load=["common", "default"])
 
+    http_default: HttpDeafult = field(default_factory=HttpDeafult)
     http_upstream: list[Upstream] = field(default_factory=list)
     http_server: list[HttpServer] = Alias(
         load=["http_server", "http_d"], default_factory=list
     )
 
+    stream_upstream: list[Upstream] = field(default_factory=list)
     stream_server: list[StreamServer] = Alias(
         load=["stream_server", "stream_d"], default_factory=list
     )

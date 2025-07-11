@@ -4,11 +4,10 @@ from pathlib import Path
 from plush.config import Config, load_config
 from plush.constants import (
     NGINX_HTTP_DEFAULT_CONF,
-    NGINX_HTTP_PORT,
     NGINX_HTTP_SERVER_DIR,
     NGINX_HTTP_UPSTREAM_DIR,
-    NGINX_HTTPS_PORT,
     NGINX_STREAM_SERVER_DIR,
+    NGINX_STREAM_UPSTREAM_DIR,
 )
 from plush.nginx.http_default import GenerateHttpDefaultConf
 from plush.nginx.http_server import GenerateOneHttpServerConf
@@ -24,9 +23,6 @@ class NginxGenerator:
 
     config: Config
 
-    http_default_listen = {NGINX_HTTP_PORT}
-    http_default_listen_ssl = {NGINX_HTTPS_PORT}
-
     def __init__(self, config_nginx_toml: str, nginx_conf_dir: str):
         self.CONFIG_NGINX_TOML = config_nginx_toml
         self.NGINX_CONF_DIR = nginx_conf_dir
@@ -39,6 +35,9 @@ class NginxGenerator:
         self.NGINX_HTTP_SERVER_DIR = Path(self.NGINX_CONF_DIR).joinpath(
             NGINX_HTTP_SERVER_DIR
         )
+        self.NGINX_STREAM_UPSTREAM_DIR = Path(self.NGINX_CONF_DIR).joinpath(
+            NGINX_STREAM_UPSTREAM_DIR
+        )
         self.NGINX_STREAM_SERVER_DIR = Path(self.NGINX_CONF_DIR).joinpath(
             NGINX_STREAM_SERVER_DIR
         )
@@ -46,6 +45,13 @@ class NginxGenerator:
     def __call__(self, *args, **kwargs):
         # parse nginx.toml
         self.config = load_config(self.CONFIG_NGINX_TOML)
+
+        logger.info(f"Generate {self.NGINX_HTTP_SERVER_DIR}/*.conf ...")
+        # generate http_default.conf
+        GenerateHttpDefaultConf(
+            http_default=self.config.http_default,
+            full_path=self.NGINX_HTTP_DEFAULT_CONF,
+        ).generate()
 
         # parser/generate http_upstream.d/*.conf
         if self.config.http_upstream:
@@ -70,13 +76,16 @@ class NginxGenerator:
                     base_path=self.NGINX_HTTP_SERVER_DIR,
                 ).generate()
 
-        # generate http_default.conf
-        logger.info(f"Generate {self.NGINX_HTTP_SERVER_DIR} ...")
-        GenerateHttpDefaultConf(
-            http_default_listen=self.http_default_listen,
-            http_default_listen_ssl=self.http_default_listen_ssl,
-            full_path=self.NGINX_HTTP_DEFAULT_CONF,
-        ).generate()
+        # parser/generate stream_upstream.d/*.conf
+        if self.config.stream_upstream:
+            logger.info(f"Generate {self.NGINX_STREAM_UPSTREAM_DIR}/*.conf ...")
+
+            self.prepair_conf_file_path(path=self.NGINX_STREAM_UPSTREAM_DIR)
+            for stream_upstream in self.config.stream_upstream:
+                GenerateOneUpstreamConf(
+                    upstream=stream_upstream,
+                    base_path=self.NGINX_STREAM_UPSTREAM_DIR,
+                ).generate()
 
         # parser/generate stram_server.d/*.conf
         if self.config.stream_server:

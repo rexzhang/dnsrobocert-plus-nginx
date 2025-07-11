@@ -1,8 +1,11 @@
-from collections.abc import Iterable
 from pathlib import Path
 from string import Template
 
+from plush.config import HttpDeafult
 from plush.nginx.common import GenerateOneConfAbc
+
+http_default_listen = [80, 443]
+http_default_listen_ssl = [443]
 
 http_default_conf_block_template_listen = """
 listen $port default_server;
@@ -54,15 +57,14 @@ class GenerateHttpDefaultConf(GenerateOneConfAbc):
 
     def __init__(
         self,
-        http_default_listen: Iterable[int],
-        http_default_listen_ssl: Iterable[int],
+        http_default: HttpDeafult,
         full_path: Path,
     ):
         self._init_common(enable=True, name=full_path.name, base_path=full_path)
         self.full_path = full_path
 
-        self.http_default_listen = http_default_listen
-        self.http_default_listen_ssl = http_default_listen_ssl
+        self.http_default_listen = http_default.http_default_listen
+        self.http_default_listen_ssl = http_default.http_default_listen_ssl
 
     def _generate_conf_content(self) -> str:
         default_listen_content = ""
