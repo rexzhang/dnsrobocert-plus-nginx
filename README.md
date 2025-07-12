@@ -64,11 +64,25 @@ listen = 10080
 listen_ssl = 10443
 proxy_pass = "http://172.17.0.1:8000"
 
-[[http_d]]
+[[http_server]]
 server_name = "www2.example.com"
 listen = 10080
 listen_ssl = 10443
 root_path = "root /mnt/www/www2.example.com"
+
+[[http_upstream]]
+name = "upstream_websocket"
+content = """
+    least_conn;
+    server 127.0.0.1:8081;
+    server 127.0.0.1:8082;
+"""
+
+[[http_server]]
+server_name = "ws.example.com"
+listen = 10080
+proxy_pass = "upstream_websocket"
+support_websocket = true
 
 [[stream_server]]
 comment = "ssh"
@@ -76,12 +90,14 @@ listen = 10022
 proxy_pass = "192.168.1.1:22"
 ```
 
-## Custom NGINX config dir
+## NGINX config dir
 
-| part     | dir                    |
-| -------- | ---------------------- |
-| http.d   | `/data/nginx/http.d`   |
-| stream.d | `/data/nginx/stream.d` |
+| part            | dir                             |
+| --------------- | ------------------------------- |
+| http_upstream   | `/data/nginx/http_upstream.d`   |
+| http_server     | `/data/nginx/http_server.d`     |
+| stream_upstream | `/data/nginx/stream_upstream.d` |
+| stream_server   | `/data/nginx/stream_server.d`   |
 
 ## FAQ
 
