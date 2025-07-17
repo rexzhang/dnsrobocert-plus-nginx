@@ -3,7 +3,7 @@ from dataclasses import dataclass, field
 from logging import getLogger
 
 from dataclass_wizard import JSONWizard
-from dataclass_wizard.v1 import Alias, AliasPath
+from dataclass_wizard.v1 import Alias
 
 from .constants import (
     NGINX_HTTP_DEFAULT_LISTEN,
@@ -18,8 +18,8 @@ logger = getLogger(__name__)
 class SSLCert:
     pem_file_base_path: str = DNSROBOCERT_SSL_FILE_DIR
 
-    default_ssl_cert_domain: str = AliasPath(
-        load="ssl_cert_domain", default_factory=str
+    default_ssl_cert_domain: str = Alias(
+        load=["default_ssl_cert_domain", "ssl_cert_domain"], default_factory=str
     )
 
 
