@@ -3,9 +3,9 @@
 # prepare data path
 mkdir -p /data/lexicon_tld_set
 mkdir -p /data/dnsrobocert
+mkdir -p /data/nginx/http_server.d
 mkdir -p /data/nginx/http_upstream.d
-mkdir -p /data/nginx/http.d
-mkdir -p /data/nginx/stream.d
+mkdir -p /data/nginx/stream_server.d
 mkdir -p /logs/dnsrobocert
 mkdir -p /logs/nginx
 mkdir -p /logs/plush
