@@ -2,8 +2,8 @@ import subprocess
 import time
 from logging import Formatter, getLogger
 from logging.handlers import WatchedFileHandler
+import sched
 
-import schedule
 
 from plush import t12f
 from plush.constants import NGINX_RELOAD_SH, WORKER_LOG, WORKER_PID
@@ -45,15 +45,23 @@ def schedule_func(**kwargs):
 
     # init schedule
     if t12f.stage == t12f.Stage.PRODUCTION:
-        schedule.every().weeks.do(task_nginx_reload)
+        interval_seconds = 60 * 60 * 24 * 7  # 1 week
     else:
-        schedule.every(10).seconds.do(task_nginx_reload)
+        interval_seconds = 10
 
-    # run schedule task
+    def task_func():
+        # call real task function
+        task_nginx_reload()
+        # reschedule
+        scheduler.enter(interval_seconds, 1, task_func, (scheduler,))
+
+    # create scheduler
+    scheduler = sched.scheduler(time.time, time.sleep)
+    scheduler.enter(interval_seconds, 1, task_func, (scheduler,))
+
+    # start schedule, blocking
     logger.info("Plush worker schedule starting...")
-    while True:
-        schedule.run_pending()
-        time.sleep(1)
+    scheduler.run()
 
 
 class ScheduleDaemon(DaemonRunner):

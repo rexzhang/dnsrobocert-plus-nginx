@@ -7,5 +7,4 @@ click
 dataclass-wizard
 
 # background task
-schedule
 python-daemon
