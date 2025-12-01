@@ -6,9 +6,9 @@ from dataclass_wizard import JSONWizard
 from dataclass_wizard.v1 import Alias
 
 from .constants import (
+    DNSROBOCERT_SSL_FILE_DIR,
     NGINX_HTTP_DEFAULT_LISTEN,
     NGINX_HTTP_DEFAULT_LISTEN_SSL,
-    DNSROBOCERT_SSL_FILE_DIR,
 )
 
 logger = getLogger(__name__)

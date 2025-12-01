@@ -3,8 +3,7 @@ from logging import getLogger
 from pathlib import Path
 from string import Template
 
-from plush.config import SSLCert, HttpServer, ServerAbc, StreamServer
-
+from plush.config import HttpServer, ServerAbc, SSLCert, StreamServer
 
 logger = getLogger("plush.nginx")
 

@@ -1,9 +1,8 @@
+import sched
 import subprocess
 import time
 from logging import Formatter, getLogger
 from logging.handlers import WatchedFileHandler
-import sched
-
 
 from plush import t12f
 from plush.constants import NGINX_RELOAD_SH, WORKER_LOG, WORKER_PID
