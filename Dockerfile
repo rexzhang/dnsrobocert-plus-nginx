@@ -1,4 +1,4 @@
-FROM python:3.13-alpine
+FROM python:3.14-alpine
 
 ARG BUILD_DEV
 ENV DEPLOY_HOOK="/app/nginx/reload.sh"
@@ -40,7 +40,7 @@ RUN \
     # nginx
     cp -f /app/nginx/nginx.conf /etc/nginx \
     # logrotate
-    && cp -f /app/logrotate/nginx /etc/logrotate.d/nginx 
+    && cp -f /app/logrotate/nginx /etc/logrotate.d/nginx
 
 VOLUME /config
 VOLUME /data

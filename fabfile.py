@@ -15,15 +15,14 @@ def say_it(message: str):
 
 
 @task
-def docker_pull_base_image(c):
-    c.run(f"{_DOCKER_PULL} {ev.DOCKER_BASE_IMAGE}")
-    print("pull docker base image finished.")
+def env_prd(c):
+    ev.switch_to_prd()
 
 
 @task
-def build(c):
-    docker_pull_base_image(c)
-    docker_build(c)
+def docker_pull_base_image(c):
+    c.run(f"{_DOCKER_PULL} {ev.DOCKER_BASE_IMAGE_TAG}")
+    print("pull docker base image finished.")
 
 
 @task
@@ -41,23 +40,30 @@ def docker_pull_image(c):
 
 
 @task
+def build(c):
+    docker_pull_base_image(c)
+    docker_build(c)
+
+
+@task
 def docker_send_image(c):
     print("send docker image to deploy server...")
     c.run(
-        f'docker save {ev.DOCKER_IMAGE_FULL_NAME} | gzip | ssh {ev.DEPLOY_SSH_USER}@{ev.DEPLOY_SSH_HOST} -p {ev.DEPLOY_SSH_PORT} "gunzip | docker load"'
+        f'docker save {ev.DOCKER_IMAGE_FULL_NAME} | zstd -19 -c | ssh {ev.DEPLOY_SSH_USER}@{ev.DEPLOY_SSH_HOST} -p {ev.DEPLOY_SSH_PORT} "zstd -d -c | docker load"'
     )
     say_it("send image finished")
 
 
 def _recreate_container(c, container_name: str, docker_run_cmd: str):
-    if ev.DEPLOY_STAGE == "local":
-        c.run(f"mkdir {ev.DEPLOY_WORK_PATH}", warn=True)
-
     c.run(f"docker container stop {container_name}", warn=True)
     c.run(f"docker container rm {container_name}", warn=True)
     c.run(f"cd {ev.DEPLOY_WORK_PATH} && {docker_run_cmd}")
 
     say_it(f"deploy {container_name} finished")
+
+
+def run_restart_script(c):
+    c.run(f"cd {ev.DEPLOY_WORK_PATH} && ./UpdateContainer.sh")
 
 
 @dataclass
@@ -69,14 +75,14 @@ class EnvValue:
     DEPLOY_SSH_HOST = "dev.h.rexzhang.com"
     DEPLOY_SSH_PORT = 22
     DEPLOY_SSH_USER = "root"
-    DEPLOY_WORK_PATH = "/root/dnsrobocert-plus-nginx"
+    DEPLOY_WORK_PATH = "~/apps/dnsrobocert-plus-nginx"
 
     # Docker Container Register
     CR_HOST_NAME = "cr.h.rexzhang.com"
     CR_NAME_SPACE = "rex"
 
     # Docker Image
-    DOCKER_BASE_IMAGE = "python:3.13-alpine"
+    DOCKER_BASE_IMAGE_TAG = "python:3.14-alpine"
 
     @property
     def DOCKER_IMAGE_FULL_NAME(self) -> str:
@@ -87,10 +93,7 @@ class EnvValue:
         return name
 
     # Docker Container
-    def get_container_name(self, module: str | None = None) -> str:
-        if module is None:
-            return f"{self.APP_NAME}-{self.DEPLOY_STAGE}"
-
+    def get_container_name(self, module: str) -> str:
         return f"{self.APP_NAME}-{self.DEPLOY_STAGE}-{module}"
 
     # Docker Container
@@ -100,9 +103,10 @@ class EnvValue:
     def asdict(self) -> dict:
         return asdict(self)
 
-    def switch_env_test(self):
-        self.DEPLOY_STAGE = "test"
-        self.DEPLOY_WORK_PATH = "/home/rex/dnsrobocert-plus-nginx"
+    def switch_to_prd(self):
+        self.DEPLOY_STAGE = "prd"
+        self.DEPLOY_SSH_HOST = "192.168.200.31"
+        self.DEPLOY_SSH_USER = "rex"
 
 
 ev = EnvValue()
@@ -117,51 +121,6 @@ def docker_build(c):
 
 
 @task
-def docker_test(c):
-    c.run(f"mkdir /tmp/{ev.get_container_name()}", warn=True)
-
-    docker_run_cmd = f"""{_DOCKER_RUN} -dit --restart unless-stopped \
- -u {ev.CONTAINER_UID}:{ev.CONTAINER_GID} \
- -p 10080:10080 -p 10443:10443 \
- -e TZ=Asia/Shanghai \
- -e DNSROBOCERT=disable \
- -e T12F_STAGE=ALPHA \
- -v $(pwd)/examples/nginx.toml:/config/nginx.toml \
- -v /tmp/{ev.get_container_name()}:/data \
- -v /tmp/{ev.get_container_name()}:/logs \
- --name {ev.get_container_name()} \
- {ev.DOCKER_IMAGE_FULL_NAME}"""
-    _recreate_container(c, ev.get_container_name(), docker_run_cmd)
-
-    c.run(f"docker container logs -f {ev.get_container_name()}")
-
-
-@task
-def docker_recreate_container(c):
-    c.run(
-        "mkdir -p /home/rex/running/dnsrobocert-plus-nginx/logs/dnsrobocert", warn=True
-    )
-
-    docker_run_cmd = f"""docker run -dit --restart unless-stopped \
- -u {ev.CONTAINER_UID}:{ev.CONTAINER_GID} \
- --network server \
- -p 80:10080 -p 443:10443 -p 636:10636 \
- --env-file container.env \
- -v /home/rex/running/dnsrobocert-plus-nginx/data:/data \
- -v $(pwd)/config:/config \
- -v $(pwd)/data_dnsrobocert_live:/data_dnsrobocert_live \
- -v $(pwd)/scripts:/scripts \
- -v /home/rex/running/dnsrobocert-plus-nginx/logs:/logs \
- -v /home/rex/running/dnsrobocert-plus-nginx/logs/dnsrobocert:/data/dnsrobocert/logs \
- --name {ev.get_container_name()} \
- --label com.centurylinklabs.watchtower.enable=false \
- {ev.DOCKER_IMAGE_FULL_NAME}"""
-    _recreate_container(c, ev.get_container_name(), docker_run_cmd)
-
-    c.run(f"docker container logs -f {ev.get_container_name()}")
-
-
-@task
 def deploy(c):
     docker_push_image(c)
 
@@ -169,7 +128,10 @@ def deploy(c):
         host=ev.DEPLOY_SSH_HOST, port=ev.DEPLOY_SSH_PORT, user=ev.DEPLOY_SSH_USER
     )
     docker_pull_image(conn)
-    docker_recreate_container(conn)
+    if ev.DEPLOY_STAGE == "dev":
+        run_restart_script(conn)
+    else:
+        print("please run restart script")
 
     print("deploy finished")
     c.run(f"say docker deploy to {ev.DEPLOY_STAGE} finished")

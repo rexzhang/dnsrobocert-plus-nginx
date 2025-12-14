@@ -4,7 +4,7 @@ dnsrobocert==3.26.1
 click
 
 # Config file
-dataclass-wizard
+dataclass-wizard>=0.35.4
 
 # background task
 python-daemon
