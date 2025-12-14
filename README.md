@@ -125,8 +125,5 @@ logrotate --debug /etc/logrotate.conf
 
 ## TODO
 
-- worker 在容器内启动是,CPU高
-  - 在启动时尝试关闭所有潜在打开的 FD 会导致 100% CPU 占用很长时间，甚至“卡死”。
-  - ulimit -n 4096;
 - 统一日志输出
 - nginx 启动前尝试验证配置文件

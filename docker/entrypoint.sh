@@ -1,5 +1,8 @@
 #!/bin/sh
 
+# 这似乎是一个系统级别的 bug,设置一下即可解决 worker CPU 占用 100% 的问题
+ulimit -n 65536;
+
 # prepare data path
 mkdir -p /data/lexicon_tld_set
 mkdir -p /data/dnsrobocert

@@ -4,7 +4,7 @@ from fabric import Connection, task
 from invoke.context import Context
 
 _DOCKER_PULL = "docker pull --platform=linux/amd64"
-_DOCKER_BUILD = "docker buildx build --platform=linux/amd64 --build-arg BUILD_DEV=rex"  # TODO: t-string
+_DOCKER_BUILD = "docker buildx build --platform=linux/amd64 --build-arg BUILD_ENV=rex"  # TODO: t-string
 _DOCKER_RUN = "docker run --platform=linux/amd64"
 _c = Context()
 

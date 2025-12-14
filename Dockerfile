@@ -1,14 +1,15 @@
 FROM python:3.14-alpine
 
-ARG BUILD_DEV
+ARG BUILD_ENV
+
 ENV DEPLOY_HOOK="/app/nginx/reload.sh"
 ENV TLDEXTRACT_CACHE_PATH=/data/lexicon_tld_set
 ENV DNSROBOCERT="enable"
 
-RUN if [ "$BUILD_DEV" = "rex" ]; then echo "Change depends" \
+RUN if [ "$BUILD_ENV" = "rex" ]; then echo "Change depends" \
     && pip config set global.index-url https://proxpi.h.rexzhang.com/index/ \
     && pip config set install.trusted-host proxpi.h.rexzhang.com \
-    && sed -i 's/dl-cdn.alpinelinux.org/mirrors.tuna.tsinghua.edu.cn/g' /etc/apk/repositories \
+    && sed -i 's#https\?://dl-cdn.alpinelinux.org/alpine#https://mirrors.tuna.tsinghua.edu.cn/alpine#g' /etc/apk/repositories \
     ; fi
 
 COPY requirements.d /app/requirements.d
