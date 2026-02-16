@@ -2,7 +2,7 @@ dnsrobocert==3.26.1
 jinja2
 
 # CLI
-click
+typer
 
 # Config file
 dataclass-wizard>=0.35.4
