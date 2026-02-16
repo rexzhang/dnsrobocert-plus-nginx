@@ -1,4 +1,5 @@
 dnsrobocert==3.26.1
+jinja2
 
 # CLI
 click

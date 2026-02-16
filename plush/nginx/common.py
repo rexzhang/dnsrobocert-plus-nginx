@@ -3,7 +3,7 @@ from logging import getLogger
 from pathlib import Path
 from string import Template
 
-from plush.config import HttpServer, ServerAbc, SSLCert, StreamServer
+from plush.config import HttpServer, MailServer, ServerAbc, SSLCert, StreamServer
 
 logger = getLogger("plush.nginx")
 
@@ -97,7 +97,10 @@ class GenerateOneServerConfAbc(GenerateOneConfAbc):
     ssl_cert: SSLCert
 
     def __init__(
-        self, server: HttpServer | StreamServer, ssl_cert: SSLCert, base_path: Path
+        self,
+        server: HttpServer | StreamServer | MailServer,
+        ssl_cert: SSLCert,
+        base_path: Path,
     ):
         self._init_common(name=server.name, enable=server.enable, base_path=base_path)
 

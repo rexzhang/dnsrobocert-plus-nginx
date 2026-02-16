@@ -1,5 +1,5 @@
 import tomllib
-from dataclasses import dataclass, field
+from dataclasses import KW_ONLY, dataclass, field
 from logging import getLogger
 
 from dataclass_wizard import JSONWizard
@@ -9,6 +9,7 @@ from .constants import (
     DNSROBOCERT_SSL_FILE_DIR,
     NGINX_HTTP_DEFAULT_LISTEN,
     NGINX_HTTP_DEFAULT_LISTEN_SSL,
+    NginxMailServerType,
 )
 
 logger = getLogger(__name__)
@@ -95,6 +96,21 @@ class StreamServer(ServerAbc):
 
 
 @dataclass
+class MailServer(ServerAbc):
+    type: NginxMailServerType = NginxMailServerType.SSL
+    port: int = 465
+
+    proxy_pass: str = ""
+
+    _: KW_ONLY
+    auth_http: str
+
+    @property
+    def name(self) -> str:
+        return f"mail_server_{self.type.value}_p{self.port}"
+
+
+@dataclass
 class Config(JSONWizard):
     class _(JSONWizard.Meta):
         v1 = True
@@ -111,6 +127,8 @@ class Config(JSONWizard):
     stream_server: list[StreamServer] = Alias(
         load=["stream_server", "stream_d"], default_factory=list
     )
+
+    mail_server: list[MailServer] = field(default_factory=list)
 
 
 def load_config(toml_file: str) -> Config:

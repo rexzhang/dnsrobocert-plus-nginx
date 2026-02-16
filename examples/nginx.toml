@@ -110,3 +110,14 @@ content = """
 comment = "git"
 listen = 12222
 proxy_pass = "ssh_upstream_test"
+
+[[mail_server]]
+type = "ssl"
+port = 465
+auth_http = "localhost:8000/api/smtpd/auth"
+
+[[mail_server]]
+type = "starttls"
+port = 587
+
+auth_http = "localhost:8000/api/smtpd/auth"

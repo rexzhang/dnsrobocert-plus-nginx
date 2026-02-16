@@ -6,6 +6,7 @@ from plush.constants import (
     NGINX_HTTP_DEFAULT_CONF,
     NGINX_HTTP_SERVER_DIR,
     NGINX_HTTP_UPSTREAM_DIR,
+    NGINX_MAIL_SERVER_DIR,
     NGINX_STREAM_SERVER_DIR,
     NGINX_STREAM_UPSTREAM_DIR,
 )
@@ -13,6 +14,8 @@ from plush.nginx.http_default import GenerateHttpDefaultConf
 from plush.nginx.http_server import GenerateOneHttpServerConf
 from plush.nginx.stream_server import GenerateOneStreamServerConf
 from plush.nginx.upstream import GenerateOneUpstreamConf
+
+from .mail_server import GenerateOneMailServerConf
 
 logger = getLogger(__name__)
 
@@ -40,6 +43,9 @@ class NginxGenerator:
         )
         self.NGINX_STREAM_SERVER_DIR = Path(self.NGINX_CONF_DIR).joinpath(
             NGINX_STREAM_SERVER_DIR
+        )
+        self.NGINX_MAIL_SERVER_DIR = Path(self.NGINX_CONF_DIR).joinpath(
+            NGINX_MAIL_SERVER_DIR
         )
 
     def __call__(self, *args, **kwargs):
@@ -97,6 +103,18 @@ class NginxGenerator:
                     server=stream_server,
                     ssl_cert=self.config.ssl_cert,
                     base_path=self.NGINX_STREAM_SERVER_DIR,
+                ).generate()
+
+        # parser/generate mail_server.d/*.conf
+        if self.config.stream_server:
+            logger.info(f"Generate {self.NGINX_MAIL_SERVER_DIR}/*.conf ...")
+
+            self.prepair_conf_file_path(path=self.NGINX_MAIL_SERVER_DIR)
+            for mail_server in self.config.mail_server:
+                GenerateOneMailServerConf(
+                    server=mail_server,
+                    ssl_cert=self.config.ssl_cert,
+                    base_path=self.NGINX_MAIL_SERVER_DIR,
                 ).generate()
 
     def prepair_conf_file_path(self, path: Path):

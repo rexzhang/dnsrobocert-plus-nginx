@@ -1,3 +1,5 @@
+from enum import StrEnum, auto
+
 # NGINX
 CONFIG_NGINX_TOML = "/config/nginx.toml"
 
@@ -13,6 +15,13 @@ NGINX_HTTP_SERVER_DIR = "http_server.d"
 
 NGINX_STREAM_UPSTREAM_DIR = "stream_upstream.d"
 NGINX_STREAM_SERVER_DIR = "stream_server.d"
+
+NGINX_MAIL_SERVER_DIR = "mail_server.d"
+
+
+class NginxMailServerType(StrEnum):
+    SSL = auto()
+    STARTTLS = auto()
 
 
 # Worker

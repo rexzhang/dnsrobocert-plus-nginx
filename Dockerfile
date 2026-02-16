@@ -17,7 +17,7 @@ RUN \
     # install depends ---
     apk add --no-cache --virtual .build-deps build-base libffi-dev \
     # -- for nginx
-    && apk add nginx nginx-mod-stream nginx-mod-http-brotli nginx-mod-http-zstd \
+    && apk add nginx nginx-mod-stream nginx-mod-mail nginx-mod-http-brotli nginx-mod-http-zstd \
     && chmod 777 -R /var/lib/nginx \
     && mkdir -p /run/nginx \
     && chmod 777 -R /run/nginx \
