@@ -1,5 +1,4 @@
-☐ 使用 jinja2 替代原有的模版
+✔ 使用 jinja2 替代原有的模版 @done(26-02-16 23:45)
 ☐ 使用 dataclass_wizard 的 type 自动匹配机制
     ☐ 整合所有的 server 到一个父类下面
-☐ 修改启动后的 nginx 告警
-☐ 生产环境部署测试使用 pve-docker
+☐ 修正启动后的 nginx 告警
