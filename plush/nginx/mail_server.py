@@ -1,12 +1,11 @@
 from logging import getLogger
-from string import Template
 
-
-from ..tempalte import Template
-from ..constants import NginxMailServerType
-
-from .common import GenerateOneServerConfAbc
 from ..config import MailServer
+from ..constants import NginxMailServerType
+from ..tempalte import Template
+from .common import GenerateOneServerConfAbc
+
+logger = getLogger("plush.nginx")
 
 
 mail_conf_template_ssl = """
@@ -57,7 +56,10 @@ class GenerateOneMailServerConf(GenerateOneServerConfAbc):
             case NginxMailServerType.STARTTLS:
                 template_name = mail_conf_template_starttls
             case _:
-                raise
+                logger.error(
+                    f"{self.label}, type: {self.server.type} that is not supported"
+                )
+                return ""
 
         template = Template()
         return template.render(

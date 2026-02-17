@@ -2,6 +2,7 @@ from logging import getLogger
 
 import typer
 
+from . import __version__
 from .constants import CONFIG_NGINX_TOML, NGINX_CONF_DIR
 from .nginx import NginxGenerator
 from .worker import ScheduleDaemon
@@ -37,4 +38,5 @@ def generate(
 
 
 def main():
+    typer.echo(f"Plush v{__version__}")
     app()
