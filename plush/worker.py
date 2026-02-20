@@ -4,16 +4,17 @@ import time
 from logging import Formatter, getLogger
 from logging.handlers import WatchedFileHandler
 
-from plush import t12f
 from plush.constants import NGINX_RELOAD_SH, WORKER_LOG, WORKER_PID
 from plush.daemon_runner import DaemonRunner
+
+from .deploy_stage import EV, DeployStage, get_path
 
 logger = getLogger(__name__)
 logger_formatter = Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 
 
 def _logging_add_file_handler():
-    logger_handler = WatchedFileHandler(t12f.file(WORKER_LOG))
+    logger_handler = WatchedFileHandler(get_path(WORKER_LOG))
     logger_handler.setFormatter(logger_formatter)
     logger.addHandler(logger_handler)
 
@@ -43,7 +44,7 @@ def schedule_func(**kwargs):
     logger.info(f"Plush worker starting...pid: {kwargs.get('pid')}")
 
     # init schedule
-    if t12f.stage == t12f.Stage.PRODUCTION:
+    if EV.DEPLOY_STAGE == DeployStage.PRD:
         interval_seconds = 60 * 60 * 24 * 7  # 1 week
     else:
         interval_seconds = 10

@@ -1,5 +1,8 @@
+import os
 from dataclasses import asdict, dataclass
+from typing import Any, overload
 
+from dotenv import dotenv_values
 from fabric import Connection, task
 from invoke.context import Context
 
@@ -7,6 +10,41 @@ _DOCKER_PULL = "docker pull --platform=linux/amd64"
 _DOCKER_BUILD = "docker buildx build --platform=linux/amd64 --build-arg BUILD_ENV=rex"  # TODO: t-string
 _DOCKER_RUN = "docker run --platform=linux/amd64"
 _c = Context()
+
+_MISSING = object()
+
+
+class EnvValue:
+    data: dict[str, str]
+
+    def __init__(self, env_path: str = ".env") -> None:
+        base_env = os.environ.copy()
+        file_env = dotenv_values(env_path)
+        self.data = {k: v for k, v in {**base_env, **file_env}.items() if v is not None}
+
+    @overload
+    def get(self, k: str) -> str | None: ...
+
+    @overload
+    def get(self, k: str, default: str) -> str: ...
+
+    def get(self, k: str, default: Any = _MISSING) -> str | None:
+        value = self.data.get(k)
+        if value is not None:
+            return value
+
+        if default is _MISSING:
+            return None
+
+        if default is None:
+            raise ValueError(f"The default value for key '{k}' cannot be None.")
+
+        return default
+
+    def __repr__(self) -> str:
+        import json
+
+        return json.dumps(self.data, indent=2)
 
 
 def say_it(message: str):
@@ -16,12 +54,12 @@ def say_it(message: str):
 
 @task
 def env_prd(c):
-    ev.switch_to_prd()
+    DV.switch_to_prd()
 
 
 @task
 def docker_pull_base_image(c):
-    c.run(f"{_DOCKER_PULL} {ev.DOCKER_BASE_IMAGE_TAG}")
+    c.run(f"{_DOCKER_PULL} {DV.DOCKER_BASE_IMAGE_TAG}")
     print("pull docker base image finished.")
 
 
@@ -29,13 +67,13 @@ def docker_pull_base_image(c):
 def docker_push_image(c):
     print("push docker image to register...")
 
-    c.run(f"docker push {ev.DOCKER_IMAGE_FULL_NAME}")
+    c.run(f"docker push {DV.DOCKER_IMAGE_FULL_NAME}")
     say_it("push finished.")
 
 
 @task
 def docker_pull_image(c):
-    c.run(f"{_DOCKER_PULL} {ev.DOCKER_IMAGE_FULL_NAME}")
+    c.run(f"{_DOCKER_PULL} {DV.DOCKER_IMAGE_FULL_NAME}")
     say_it("pull image finished.")
 
 
@@ -49,7 +87,7 @@ def build(c):
 def docker_send_image(c):
     print("send docker image to deploy server...")
     c.run(
-        f'docker save {ev.DOCKER_IMAGE_FULL_NAME} | zstd -19 -c | ssh {ev.DEPLOY_SSH_USER}@{ev.DEPLOY_SSH_HOST} -p {ev.DEPLOY_SSH_PORT} "zstd -d -c | docker load"'
+        f'docker save {DV.DOCKER_IMAGE_FULL_NAME} | zstd -19 -c | ssh {DV.DEPLOY_SSH_USER}@{DV.DEPLOY_SSH_HOST} -p {DV.DEPLOY_SSH_PORT} "zstd -d -c | docker load"'
     )
     say_it("send image finished")
 
@@ -57,25 +95,56 @@ def docker_send_image(c):
 def _recreate_container(c, container_name: str, docker_run_cmd: str):
     c.run(f"docker container stop {container_name}", warn=True)
     c.run(f"docker container rm {container_name}", warn=True)
-    c.run(f"cd {ev.DEPLOY_WORK_PATH} && {docker_run_cmd}")
+    c.run(f"cd {DV.DEPLOY_WORK_PATH} && {docker_run_cmd}")
 
     say_it(f"deploy {container_name} finished")
 
 
 def run_restart_script(c):
-    c.run(f"cd {ev.DEPLOY_WORK_PATH} && ./UpdateContainer.sh")
+    c.run(f"cd {DV.DEPLOY_WORK_PATH} && ./UpdateContainer.sh")
 
 
 @dataclass
-class EnvValue:
-    APP_NAME = "dnsrobocert-plus-nginx"
+class DeployValue:
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self._env_value = EnvValue()
+
+    def _get_value_from_env(self, name: str, default: str | None = None) -> str:
+        if default is None:
+            value = self._env_value.get(
+                f"{self.APP_NAME.replace("-", "_").upper()}_{self.DEPLOY_STAGE.upper()}_{name.upper()}"
+            )
+        else:
+            value = self._env_value.get(
+                f"{self.APP_NAME.replace("-", "_").upper()}_{self.DEPLOY_STAGE.upper()}_{name.upper()}",
+                default,
+            )
+
+        if value is None:
+            raise Exception(f"{name}, {default}")
+
+        return value
+
+    APP_NAME = "nginx-plush"
 
     # Target Host
     DEPLOY_STAGE = "dev"
-    DEPLOY_SSH_HOST = "dev.h.rexzhang.com"
-    DEPLOY_SSH_PORT = 22
-    DEPLOY_SSH_USER = "root"
-    DEPLOY_WORK_PATH = "~/apps/dnsrobocert-plus-nginx"
+
+    @property
+    def DEPLOY_SSH_HOST(self) -> str:
+        return self._get_value_from_env("DEPLOY_SSH_HOST")
+
+    @property
+    def DEPLOY_SSH_PORT(self) -> int:
+        return int(self._get_value_from_env("DEPLOY_SSH_PORT"))
+
+    @property
+    def DEPLOY_SSH_USER(self) -> str:
+        return self._get_value_from_env("DEPLOY_SSH_USER", "root")
+
+    DEPLOY_WORK_PATH = "~/apps/{APP_NAME}"
 
     # Docker Container Register
     CR_HOST_NAME = "cr.h.rexzhang.com"
@@ -105,17 +174,15 @@ class EnvValue:
 
     def switch_to_prd(self):
         self.DEPLOY_STAGE = "prd"
-        self.DEPLOY_SSH_HOST = "192.168.200.31"
-        self.DEPLOY_SSH_USER = "rex"
 
 
-ev = EnvValue()
+DV = DeployValue()
 
 
 @task()
 def docker_build(c):
     print("build docker image...")
-    c.run(f"{_DOCKER_BUILD} -t {ev.DOCKER_IMAGE_FULL_NAME} .")
+    c.run(f"{_DOCKER_BUILD} -t {DV.DOCKER_IMAGE_FULL_NAME} .")
 
     say_it("docker image build finished")
 
@@ -125,13 +192,13 @@ def deploy(c):
     docker_push_image(c)
 
     conn = Connection(
-        host=ev.DEPLOY_SSH_HOST, port=ev.DEPLOY_SSH_PORT, user=ev.DEPLOY_SSH_USER
+        host=DV.DEPLOY_SSH_HOST, port=DV.DEPLOY_SSH_PORT, user=DV.DEPLOY_SSH_USER
     )
     docker_pull_image(conn)
-    if ev.DEPLOY_STAGE == "dev":
+    if DV.DEPLOY_STAGE == "dev":
         run_restart_script(conn)
     else:
-        print("please run restart script")
+        say_it("please run restart script")
 
     print("deploy finished")
-    c.run(f"say docker deploy to {ev.DEPLOY_STAGE} finished")
+    c.run(f"say docker deploy to {DV.DEPLOY_STAGE} finished")

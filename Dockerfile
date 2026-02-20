@@ -2,6 +2,7 @@ FROM python:3.14-alpine
 
 ARG BUILD_ENV
 
+ENV PYTHONPATH="/app"
 ENV DEPLOY_HOOK="/app/nginx/reload.sh"
 ENV TLDEXTRACT_CACHE_PATH=/data/lexicon_tld_set
 ENV DNSROBOCERT="enable"

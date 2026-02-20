@@ -1,7 +1,7 @@
 #!/bin/sh
 
 # 这似乎是一个系统级别的 bug,设置一下即可解决 worker CPU 占用 100% 的问题
-ulimit -n 65536;
+#ulimit -n 65536;
 
 # prepare data path
 mkdir -p /data/lexicon_tld_set
@@ -13,10 +13,10 @@ mkdir -p /logs/dnsrobocert
 mkdir -p /logs/nginx
 mkdir -p /logs/plush
 
-# generate nginx *.conf file
-run_plush_generate="python -m plush generate"
+# call plush init
+run_plush_generate="python -m plush init"
 while ! $run_plush_generate; do
-    echo "Run plush generate failed, retrying..."
+    echo "Run plush init failed, retrying..."
     sleep 1
 done
 
@@ -26,10 +26,6 @@ while ! $start_nginx_service; do
     echo "Start NGINX failed, retrying..."
     sleep 1
 done
-
-# start plush worker
-rm -f /tmp/plush-worker.pid
-/usr/local/bin/python -m plush worker start
 
 # start dnsrobocert service
 if [ "$DNSROBOCERT" = "enable" ]; then
