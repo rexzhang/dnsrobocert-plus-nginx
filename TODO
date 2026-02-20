@@ -1,10 +1,11 @@
 ☐ 使用 jinja2 替代原有的模版
     ✔ 新增部分 @done(26-02-19 14:46)
     ☐ 遗留部分
-☐ 使用 crontab 替代 plush worker
+✔ 使用 crontab 替代 plush worker @done(26-02-20 23:20)
 ☐ plush 转变为一个服务?
     ☐ 提供一个 webhook 触发?
 ☐ 将 dnsrobocert 也改为定时执行
 ☐ 使用 dataclass_wizard 的 type 自动匹配机制
     ☐ 整合所有的 server 到一个父类下面
 ☐ 修正启动后的 nginx 告警
+    nginx: [warn] could not build optimal proxy_headers_hash, you should increase either proxy_headers_hash_max_size: 512 or proxy_headers_hash_bucket_size: 64; ignoring proxy_headers_hash_bucket_size

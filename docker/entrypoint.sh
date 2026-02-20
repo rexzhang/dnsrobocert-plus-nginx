@@ -29,11 +29,11 @@ done
 
 # start dnsrobocert service
 if [ "$DNSROBOCERT" = "enable" ]; then
-    /usr/local/bin/dnsrobocert --config /config/dnsrobocert.yml --directory /data/dnsrobocert
+    exec /usr/local/bin/dnsrobocert --config /config/dnsrobocert.yml --directory /data/dnsrobocert
 else
     echo "ENV: DNSROBOCERT is not enable"
-    python
+    exec sleep infinity
 fi
 
 # for dev
-if [ "$ENV" = "rex" ]; then python; fi
+if [ "$PLUSH_DEPLOY_STAGE" = "dev" ]; then exec sleep infinity; fi
