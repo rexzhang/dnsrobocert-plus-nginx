@@ -20,6 +20,9 @@ while ! $run_plush_generate; do
     sleep 1
 done
 
+# start cron
+supercronic /tmp/crontabs &
+
 # start nginx service
 start_nginx_service="/app/nginx/reload.sh"
 while ! $start_nginx_service; do
