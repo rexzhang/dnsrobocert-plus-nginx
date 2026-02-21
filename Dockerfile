@@ -6,6 +6,7 @@ ENV PYTHONPATH="/app"
 ENV TLDEXTRACT_CACHE_PATH=/data/lexicon_tld_set
 
 ENV PLUSH_DEPLOY_STAGE="prd"
+ENV PLUSH_CRONTAB_FILE="/tmp/crontabs"
 ENV DNSROBOCERT="enable"
 
 RUN if [ "$BUILD_ENV" = "rex" ]; then echo "Change depends" && \
@@ -43,9 +44,7 @@ COPY docker /app
 COPY plush /app/plush
 RUN \
     # nginx
-    cp -f /app/nginx/nginx.conf /etc/nginx \
-    # logrotate
-    && cp -f /app/logrotate/nginx /etc/logrotate.d/nginx
+    cp -f /app/nginx/nginx.conf /etc/nginx
 
 VOLUME /config
 VOLUME /data

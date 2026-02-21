@@ -24,7 +24,10 @@ class EnvValue(EnvWizard):
         env_file = True
 
     DEPLOY_STAGE: str = DeployStage.DEV
-    CRONTAB: str = "0 0 2 * *"
+
+    CRONTAB_FILE: str = "/tmp/crontabs"
+    CRONTAB_UPDATE: str = "0 0 2 * *"
+    CRONTAB_LOGROTATE: str = "0 0 * * *"
 
 
 EV = EnvValue()

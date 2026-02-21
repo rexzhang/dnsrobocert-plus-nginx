@@ -21,7 +21,7 @@ while ! $run_plush_generate; do
 done
 
 # update cert, start nginx service
-start_nginx_service="/app/update_restart.sh"
+start_nginx_service="/app/cron/update.sh"
 while ! $start_nginx_service; do
     echo "Update Cert/Start NGINX failed, sleeping..."
     sleep 60
@@ -29,8 +29,8 @@ while ! $start_nginx_service; do
 done
 
 # start cron
-#supercronic /tmp/crontabs 2>&1 | tee -a /logs/cron.log > /proc/1/fd/1 &
-exec supercronic /tmp/crontabs
+#supercronic /tmp/crontabs 2>&1 | tee -a /logs/supercronic.log > /proc/1/fd/1 &
+exec /usr/bin/supercronic "$PLUSH_CRONTAB_FILE"
 
 # for dev
 if [ "$PLUSH_DEPLOY_STAGE" = "dev" ]; then exec sleep infinity; fi

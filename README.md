@@ -41,7 +41,8 @@ profiles:
     sleep_time: 45
     max_checks: 5
 certificates:
-  - domains:
+  - name: example.com
+  domains:
       - example.com
       - "*.example.com"
     profile: cloudflare
@@ -88,7 +89,14 @@ support_websocket = true
 comment = "ssh"
 listen = 10022
 proxy_pass = "192.168.1.1:22"
+
+[[mail_server]]
+type = "ssl"
+port = 465
+auth_http = "localhost:8000/api/smtpd/auth"
 ```
+
+more examples please visit `examples/nginx.toml`
 
 ## NGINX config dir
 
@@ -98,6 +106,7 @@ proxy_pass = "192.168.1.1:22"
 | http_server     | `/data/nginx/http_server.d`     |
 | stream_upstream | `/data/nginx/stream_upstream.d` |
 | stream_server   | `/data/nginx/stream_server.d`   |
+| mail_server     | `/data/nginx/mail_server.d`     |
 
 ## FAQ
 

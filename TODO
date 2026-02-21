@@ -2,7 +2,11 @@
     ✔ 新增部分 @done(26-02-19 14:46)
     ☐ 遗留部分
 ✔ 使用 crontab 替代 plush worker @done(26-02-20 23:20)
-☐ 将 dnsrobocert 也改为定时执行
+✔ 将 dnsrobocert 也改为定时执行 @done(26-02-21 20:35)
+☐ 关注定时任务后台执行情况 @high
+☐ 考虑将 nginx 变成前台任务, supercronic 作为后台任务
+    ☐ nginx 错误日志才输出到前台
+    ☐ 访问日志输出到文件,不到前台
 ☐ 使用 dataclass_wizard 的 type 自动匹配机制
     ☐ 整合所有的 server 到一个父类下面
 ☐ 修正启动后的 nginx 告警
