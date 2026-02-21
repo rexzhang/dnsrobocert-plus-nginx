@@ -29,15 +29,8 @@ while ! $start_nginx_service; do
 done
 
 # start cron
-supercronic /tmp/crontabs 2>&1 | tee -a /logs/cron.log > /proc/1/fd/1 &
-
-# start dnsrobocert service
-if [ "$DNSROBOCERT" = "enable" ]; then
-    exec /usr/local/bin/dnsrobocert --config /config/dnsrobocert.yml --directory /data/dnsrobocert
-else
-    echo "ENV: DNSROBOCERT is not enable"
-    exec sleep infinity
-fi
+#supercronic /tmp/crontabs 2>&1 | tee -a /logs/cron.log > /proc/1/fd/1 &
+exec supercronic /tmp/crontabs
 
 # for dev
 if [ "$PLUSH_DEPLOY_STAGE" = "dev" ]; then exec sleep infinity; fi
