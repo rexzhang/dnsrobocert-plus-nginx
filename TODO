@@ -2,8 +2,6 @@
     ✔ 新增部分 @done(26-02-19 14:46)
     ☐ 遗留部分
 ✔ 使用 crontab 替代 plush worker @done(26-02-20 23:20)
-☐ plush 转变为一个服务?
-    ☐ 提供一个 webhook 触发?
 ☐ 将 dnsrobocert 也改为定时执行
 ☐ 使用 dataclass_wizard 的 type 自动匹配机制
     ☐ 整合所有的 server 到一个父类下面

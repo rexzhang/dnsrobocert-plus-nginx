@@ -14,7 +14,7 @@ def update_crontab_file():
 
     cron = CronTab()
     cron.remove_all(comment=_CRON_COMMENT_TAG)
-    job = cron.new(command="python -m plush cron", comment=_CRON_COMMENT_TAG)
+    job = cron.new(command="/app/update_restart.sh", comment=_CRON_COMMENT_TAG)
     job.setall(EV.CRONTAB)
     cron.write(filename)
 

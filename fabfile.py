@@ -144,7 +144,7 @@ class DeployValue:
     def DEPLOY_SSH_USER(self) -> str:
         return self._get_value_from_env("DEPLOY_SSH_USER", "root")
 
-    DEPLOY_WORK_PATH = "~/apps/{APP_NAME}"
+    DEPLOY_WORK_PATH = f"~/apps/{APP_NAME}"
 
     # Docker Container Register
     CR_HOST_NAME = "cr.h.rexzhang.com"
@@ -196,9 +196,9 @@ def deploy(c):
     )
     docker_pull_image(conn)
     if DV.DEPLOY_STAGE == "dev":
-        run_restart_script(conn)
-    else:
         say_it("please run restart script")
+    else:
+        run_restart_script(conn)
 
     print("deploy finished")
     c.run(f"say docker deploy to {DV.DEPLOY_STAGE} finished")

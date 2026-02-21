@@ -20,15 +20,16 @@ while ! $run_plush_generate; do
     sleep 1
 done
 
-# start cron
-supercronic /tmp/crontabs &
-
-# start nginx service
-start_nginx_service="/app/nginx/reload.sh"
+# update cert, start nginx service
+start_nginx_service="/app/update_restart.sh"
 while ! $start_nginx_service; do
-    echo "Start NGINX failed, retrying..."
-    sleep 1
+    echo "Update Cert/Start NGINX failed, sleeping..."
+    sleep 60
+    echo "retrying..."
 done
+
+# start cron
+supercronic /tmp/crontabs 2>&1 | tee -a /logs/cron.log > /proc/1/fd/1 &
 
 # start dnsrobocert service
 if [ "$DNSROBOCERT" = "enable" ]; then

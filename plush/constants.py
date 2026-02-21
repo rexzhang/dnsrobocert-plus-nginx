@@ -4,7 +4,7 @@ from enum import StrEnum, auto
 CONFIG_NGINX_TOML = "/config/nginx.toml"
 
 NGINX_CONF_DIR = "/data/nginx"
-NGINX_RELOAD_SH = "/app/nginx/reload.sh"
+NGINX_RELOAD_SH = "/app/nginx/reload.sh"  # 已废弃
 
 NGINX_HTTP_DEFAULT_CONF = "http_default.conf"
 NGINX_HTTP_DEFAULT_LISTEN = 10080
