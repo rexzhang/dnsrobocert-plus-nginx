@@ -1,11 +1,11 @@
 from pathlib import Path
-from string import Template
 
 from plush.config import Upstream
 from plush.nginx.common import GenerateOneConfAbc
+from plush.tempalte import Template
 
-upstream_conf_tempalte = """upstream $upstream_name {
-    $upstream_content
+upstream_conf_tempalte = """upstream {{ upstream_name }} {
+    {{ upstream_content }}
 }"""
 
 
@@ -26,9 +26,10 @@ class GenerateOneUpstreamConf(GenerateOneConfAbc):
         self.upstream = upstream
 
     def _generate_conf_content(self) -> str:
-        return Template(upstream_conf_tempalte).substitute(
+        return Template().render(
+            upstream_conf_tempalte,
             {
                 "upstream_name": self.upstream.name,
                 "upstream_content": self.upstream.content,
-            }
+            },
         )

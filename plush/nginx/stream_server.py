@@ -1,5 +1,5 @@
 from logging import getLogger
-from string import Template
+from ..tempalte import Template
 
 from plush.config import StreamServer
 from plush.nginx.common import GenerateOneServerConfAbc
@@ -7,26 +7,26 @@ from plush.nginx.common import GenerateOneServerConfAbc
 logger = getLogger(__name__)
 stream_conf_template_main_no_ssl = """
 server {
-    # $comment
-    listen $listen; listen [::]:$listen;
+    # {{ comment }}
+    listen {{ listen }}; listen [::]:{{ listen }};
 
-    $values
+    {{ values }}
 
-    proxy_pass $$proxy_pass;
+    proxy_pass {{ proxy_pass }};
 }
 """
 
 stream_conf_template_main_only_ssl = """
 server {
-    # $comment
-    listen $listen_ssl ssl; listen [::]:$listen_ssl ssl;
+    # {{ comment }}
+    listen {{ listen_ssl }} ssl; listen [::]:{{ listen_ssl }} ssl;
 
-    $values
+    {{ values }}
 
     proxy_ssl on;
-    $block_ssl
+    {{ block_ssl }}
 
-    proxy_pass $$proxy_pass;
+    proxy_pass {{ proxy_pass }};
 }
 """
 
@@ -45,7 +45,9 @@ class GenerateOneStreamServerConf(GenerateOneServerConfAbc):
     def _generate_conf_content(self) -> str:
         result = ""
         if isinstance(self.server.listen, int):
-            result += Template(stream_conf_template_main_no_ssl).substitute(
+            template = Template()
+            result += template.render(
+                stream_conf_template_main_no_ssl,
                 {
                     "comment": self.server.comment,
                     "values": self.generate_values_list_str(),
@@ -60,7 +62,9 @@ class GenerateOneStreamServerConf(GenerateOneServerConfAbc):
                 logger.error(f"{self.label} miss [ssl_cert_domain]")
                 return ""
 
-            result += Template(stream_conf_template_main_only_ssl).substitute(
+            template = Template()
+            result += template.render(
+                stream_conf_template_main_only_ssl,
                 {
                     "comment": self.server.comment,
                     "values": self.generate_values_list_str(),

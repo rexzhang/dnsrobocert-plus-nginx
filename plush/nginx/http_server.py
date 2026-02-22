@@ -1,8 +1,8 @@
 from logging import getLogger
-from string import Template
 
 from plush.config import HttpServer
 from plush.nginx.common import GenerateOneServerConfAbc
+from plush.tempalte import Template
 
 logger = getLogger("plush.nginx")
 
@@ -13,76 +13,76 @@ include /app/nginx/snippets/websocket.conf;"""
 
 block_template_client_max_body_size = """
 # Fix: 413 - Request Entity Too Large
-client_max_body_size $client_max_body_size;"""
+client_max_body_size {{ client_max_body_size }};"""
 
 # https://www.nginx.com/blog/http-strict-transport-security-hsts-and-nginx/
 block_template_hsts = """
 # Enable HSTS
-add_header Strict-Transport-Security "max-age=$hsts_max_age; includeSubDomains" always;"""  # noqa E501
+add_header Strict-Transport-Security "max-age={{ hsts_max_age }}; includeSubDomains" always;"""  # noqa E501
 
 
 http_conf_template_main_only_http = """
 server {
-    server_name $server_name;
-    $listen
+    server_name {{ server_name }};
+    {{ listen }}
 
-    $values
-    $locations
+    {{ values }}
+    {{ locations }}
 }
 """
 
 http_conf_template_main_only_https = """
 server {
-    server_name $server_name;
-    $listen_ssl
+    server_name {{ server_name }};
+    {{ listen_ssl }}
 
-    $values
-    $block_ssl
-    $block_hsts
-    $locations
+    {{ values }}
+    {{ block_ssl }}
+    {{ block_hsts }}
+    {{ locations }}
 }
 """
 
 http_conf_template_main_http_and_https = """
 server {
-    server_name $server_name;
-    $listen
+    server_name {{ server_name }};
+    {{ listen }}
 
-    return 301 https://$server_name$$request_uri;
+    return 301 https://{{ server_name }}$request_uri;
 }
 
 server {
-    $listen_ssl
-    server_name $server_name;
+    {{ listen_ssl }}
+    server_name {{ server_name }};
 
-    $values
+    {{ values }}
 
     proxy_buffering off; ## Sends data as fast as it can not buffering large chunks.
 
-    $block_ssl
-    $block_hsts
-    $locations
+    {{ block_ssl }}
+    {{ block_hsts }}
+    {{ locations }}
 }
 """
 
 block_template_location_root_with_root_path = """
     location / {
-        root $$root_path;
+        root $root_path;
     }"""
 
 block_template_location_root_with_proxy_pass = """
     location / {
-        $block_client_max_body_size
+        {{ block_client_max_body_size }}
 
         include /app/nginx/snippets/proxy-params.conf;
-        $block_websocket
+        {{ block_websocket }}
 
-        proxy_pass $$proxy_pass;
+        proxy_pass $proxy_pass;
     }"""
 
 block_template_location_custom = """
-    location $location_path {
-        $location_content
+    location {{ location_path }} {
+        {{ location_content }}
     }"""
 
 
@@ -123,8 +123,9 @@ class GenerateOneHttpServerConf(GenerateOneServerConfAbc):
                 return ""
 
         for k, v in self.server.location.items():
-            locations_str += Template(block_template_location_custom).substitute(
-                {"location_path": k, "location_content": v}
+            locations_str += Template().render(
+                block_template_location_custom,
+                {"location_path": k, "location_content": v},
             )
 
         # httpd main
@@ -133,11 +134,11 @@ class GenerateOneHttpServerConf(GenerateOneServerConfAbc):
             isinstance(self.server.listen_ssl, int),
         ):
             case (True, False):
-                main_template = Template(http_conf_template_main_only_http)
+                template_name = http_conf_template_main_only_http
             case (False, True):
-                main_template = Template(http_conf_template_main_only_https)
+                template_name = http_conf_template_main_only_https
             case (True, True):
-                main_template = Template(http_conf_template_main_http_and_https)
+                template_name = http_conf_template_main_http_and_https
             case _:
                 logger.error(f"{self.label} miss [listen] and [listen_ssl]")
                 return ""
@@ -167,13 +168,15 @@ class GenerateOneHttpServerConf(GenerateOneServerConfAbc):
                 raise
 
         if self.server.hsts:
-            block_hsts = Template(block_template_hsts).substitute(
-                {"hsts_max_age": self.server.hsts_max_age}
+            block_hsts = Template().render(
+                block_template_hsts,
+                {"hsts_max_age": self.server.hsts_max_age},
             )
         else:
             block_hsts = ""
 
-        result = main_template.substitute(
+        result = Template().render(
+            template_name,
             {
                 "values": self.generate_values_list_str(),
                 "server_name": self.server.server_name,
@@ -181,34 +184,36 @@ class GenerateOneHttpServerConf(GenerateOneServerConfAbc):
                 "listen_ssl": listen_ssl,
                 "block_ssl": self.generate_block_ssl(),
                 "block_hsts": block_hsts,
-                # "block_upstream": block_upstream,
                 "locations": locations_str,
-            }
+            },
         )
 
         return result
 
     def _generate_location_root_with_root(self) -> str:
-        return Template(block_template_location_root_with_root_path).substitute(
-            {"root_path": self.server.root_path}
+        return Template().render(
+            block_template_location_root_with_root_path,
+            {"root_path": self.server.root_path},
         )
 
     def _generate_location_root_with_proxy_pass(self) -> str:
         if self.server.client_max_body_size is None:
             block_client_max_body_size_str = ""
         else:
-            block_client_max_body_size_str = Template(
-                block_template_client_max_body_size
-            ).substitute({"client_max_body_size": self.server.client_max_body_size})
+            block_client_max_body_size_str = Template().render(
+                block_template_client_max_body_size,
+                {"client_max_body_size": self.server.client_max_body_size},
+            )
 
         if self.server.support_websocket:
             block_websocket = block_template_websocket
         else:
             block_websocket = ""
 
-        return Template(block_template_location_root_with_proxy_pass).substitute(
+        return Template().render(
+            block_template_location_root_with_proxy_pass,
             {
                 "block_websocket": block_websocket,
                 "block_client_max_body_size": block_client_max_body_size_str,
-            }
+            },
         )

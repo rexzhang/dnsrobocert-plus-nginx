@@ -1,9 +1,9 @@
 import builtins
 from logging import getLogger
 from pathlib import Path
-from string import Template
 
 from plush.config import HttpServer, MailServer, ServerAbc, SSLCert, StreamServer
+from plush.tempalte import Template
 
 logger = getLogger("plush.nginx")
 
@@ -87,8 +87,8 @@ class GenerateOneConfAbc:
 
 server_block_template_ssl = """
 # SSL certificate
-ssl_certificate     $ssl_pem_file_base_path/fullchain.pem;
-ssl_certificate_key $ssl_pem_file_base_path/privkey.pem;
+ssl_certificate     {{ ssl_pem_file_base_path }}/fullchain.pem;
+ssl_certificate_key {{ ssl_pem_file_base_path }}/privkey.pem;
 include /app/nginx/snippets/ssl-params.conf;"""
 
 
@@ -120,10 +120,11 @@ class GenerateOneServerConfAbc(GenerateOneConfAbc):
             # default is None
             return ""
 
-        return Template(server_block_template_ssl).substitute(
+        return Template().render(
+            server_block_template_ssl,
             {
                 "ssl_pem_file_base_path": Path(self.ssl_cert.pem_file_base_path)
                 .joinpath(ssl_cert_domain)
                 .as_posix()
-            }
+            },
         )
