@@ -30,7 +30,7 @@ done
 
 # start cron
 #supercronic /tmp/crontabs 2>&1 | tee -a /logs/supercronic.log > /proc/1/fd/1 &
-exec /usr/bin/supercronic "$PLUSH_CRONTAB_FILE"
+exec /usr/bin/supercronic "$PLUSH_CRONTAB_FILE" > /proc/1/fd/1 2>&1
 
 # for dev
 if [ "$PLUSH_DEPLOY_STAGE" = "dev" ]; then exec sleep infinity; fi
