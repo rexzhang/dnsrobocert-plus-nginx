@@ -5,15 +5,14 @@
 ✔ 将 dnsrobocert 也改为定时执行 @done(26-02-21 20:35)
 ✔ 关注定时任务后台执行情况 @done(26-02-23 17:02)
 ☐ 重新设计日志输出
-    ☐ nginx 错误日志输出到docker 日志
+    ✔ nginx 错误日志输出到docker 日志 @done(26-02-23 17:37)
     # 保持原有的文件记录
     error_log /var/log/nginx/error.log warn;
 
     # 新增一行，直接输出到 Docker 能捕获的 stderr
-    error_log /dev/stderr warn;
-    ☐ nginx 访问日志输出到文件,不到前台
-    ☐ nginx 的日志访问日志按照 vhost 分割
-    ☐ 日志滚动考虑文件大小和时间
+    error_log /dev/stderr error;
+    ✔ nginx 访问日志输出到文件,不到前台 @done(26-02-23 17:37)
+    ✔ 日志滚动考虑文件大小和时间 @done(26-02-23 17:34)
 ☐ 使用 dataclass_wizard 的 type 自动匹配机制
     ☐ 整合所有的 server 到一个父类下面
 ☐ 修正启动后的 nginx 告警
