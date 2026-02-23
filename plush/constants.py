@@ -1,5 +1,9 @@
 from enum import StrEnum, auto
 
+# Worker
+WORKER_PID = "/tmp/plush-worker.pid"
+WORKER_LOG = "/logs/plush/worker.log"
+
 # NGINX
 CONFIG_NGINX_TOML = "/config/nginx.toml"
 
@@ -22,11 +26,6 @@ NGINX_MAIL_SERVER_DIR = "mail_server.d"
 class NginxMailServerType(StrEnum):
     SSL = auto()
     STARTTLS = auto()
-
-
-# Worker
-WORKER_PID = "/tmp/plush-worker.pid"
-WORKER_LOG = "/logs/plush/worker.log"
 
 
 # dnsrobocert

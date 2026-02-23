@@ -1,10 +1,14 @@
 # CHANGELOG
 
-## 4.2.0
+## Next
+
+- chore: change cron:update to every day
+
+## 4.2.0 - 20260222
 
 - refactor: move dnsrobocert into cron task
 - refactor: move logrotate into cron task
-- refactor: use jinja2 template replace  string.Template
+- refactor: use jinja2 template replace string.Template
 
 ## 4.1.0 - 20260221
 

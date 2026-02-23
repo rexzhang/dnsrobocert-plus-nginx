@@ -15,7 +15,7 @@ from daemon import DaemonContext
 from daemon.pidfile import TimeoutPIDLockFile
 from lockfile import AlreadyLocked
 
-from .deploy_stage import get_path
+from .deploy_stage import get_file_path
 
 logger = getLogger(__name__)
 
@@ -27,7 +27,7 @@ class DaemonRunner:
         func_daemon: Callable,
         func_cleanup: Callable | None = None,
     ) -> None:
-        self.pid_file = get_path(pid_file)
+        self.pid_file = get_file_path(pid_file)
         self.pid_lock = TimeoutPIDLockFile(self.pid_file)
         self.func_daemon = func_daemon
         self.func_cleanup = func_cleanup

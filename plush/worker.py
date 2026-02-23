@@ -7,14 +7,14 @@ from logging.handlers import WatchedFileHandler
 from plush.constants import NGINX_RELOAD_SH, WORKER_LOG, WORKER_PID
 from plush.daemon_runner import DaemonRunner
 
-from .deploy_stage import EV, DeployStage, get_path
+from .deploy_stage import EV, DeployStage, get_file_path
 
 logger = getLogger(__name__)
 logger_formatter = Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 
 
 def _logging_add_file_handler():
-    logger_handler = WatchedFileHandler(get_path(WORKER_LOG))
+    logger_handler = WatchedFileHandler(get_file_path(WORKER_LOG))
     logger_handler.setFormatter(logger_formatter)
     logger.addHandler(logger_handler)
 

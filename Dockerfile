@@ -3,11 +3,16 @@ FROM python:3.14-alpine
 ARG BUILD_ENV
 
 ENV PYTHONPATH="/app"
-ENV TLDEXTRACT_CACHE_PATH=/data/lexicon_tld_set
 
 ENV PLUSH_DEPLOY_STAGE="prd"
-ENV PLUSH_CRONTAB_FILE="/tmp/crontabs"
+ENV PLUSH_CRONTAB_FILE="/data/crontabs"
+ENV PLUSH_LOGROTATE_CONF="/data/logrotate.conf"
+ENV PLUSH_LOGROTATE_SIZE="100M"
+ENV PLUSH_LOGROTATE_ROTATE="10"
+
 ENV DNSROBOCERT="enable"
+ENV TLDEXTRACT_CACHE_PATH=/data/lexicon_tld_set
+
 
 RUN if [ "$BUILD_ENV" = "rex" ]; then echo "Change depends" && \
     pip config set global.index-url https://proxpi.h.rexzhang.com/index/ && \

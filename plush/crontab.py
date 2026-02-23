@@ -2,7 +2,7 @@ from logging import getLogger
 
 from crontab import CronTab
 
-from .deploy_stage import EV, get_path
+from .deploy_stage import EV, get_file_path
 
 logger = getLogger(__name__)
 
@@ -10,7 +10,7 @@ _CRON_COMMENT_TAG = "PLUSH"
 
 
 def update_crontab_file():
-    filename = get_path(EV.CRONTAB_FILE).as_posix()
+    filename = get_file_path(EV.CRONTAB_FILE).as_posix()
 
     cron = CronTab()
     cron.remove_all(comment=_CRON_COMMENT_TAG)
@@ -22,5 +22,5 @@ def update_crontab_file():
     job.setall(EV.CRONTAB_LOGROTATE)
     cron.write(filename)
 
-    message = f"Init: crontab file:{filename} created/updated."
+    message = f"crontab file: {filename} created/updated."
     logger.info(message)

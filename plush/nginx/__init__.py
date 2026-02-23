@@ -1,7 +1,7 @@
 from logging import getLogger
 from pathlib import Path
 
-from plush.config import Config, load_config
+from plush.config import Config, get_config_from_file
 from plush.constants import (
     NGINX_HTTP_DEFAULT_CONF,
     NGINX_HTTP_SERVER_DIR,
@@ -16,41 +16,37 @@ from plush.nginx.stream_server import GenerateOneStreamServerConf
 from plush.nginx.upstream import GenerateOneUpstreamConf
 
 from .mail_server import GenerateOneMailServerConf
+from ..deploy_stage import get_file_path
 
 logger = getLogger(__name__)
 
 
 class NginxGenerator:
-    CONFIG_NGINX_TOML: str
-    NGINX_CONF_DIR: str
-
     config: Config
 
-    def __init__(self, config_nginx_toml: str, nginx_conf_dir: str):
+    def __init__(self, config_nginx_toml: Path, nginx_conf_dir: Path):
         self.CONFIG_NGINX_TOML = config_nginx_toml
-        self.NGINX_CONF_DIR = nginx_conf_dir
-        self.NGINX_HTTP_DEFAULT_CONF = Path(self.NGINX_CONF_DIR).joinpath(
+        self.NGINX_CONF_DIR = get_file_path(nginx_conf_dir)
+        self.prepair_conf_file_path(self.NGINX_CONF_DIR)
+
+        self.NGINX_HTTP_DEFAULT_CONF = self.NGINX_CONF_DIR.joinpath(
             NGINX_HTTP_DEFAULT_CONF
         )
-        self.NGINX_HTTP_UPSTREAM_DIR = Path(self.NGINX_CONF_DIR).joinpath(
+        self.NGINX_HTTP_UPSTREAM_DIR = self.NGINX_CONF_DIR.joinpath(
             NGINX_HTTP_UPSTREAM_DIR
         )
-        self.NGINX_HTTP_SERVER_DIR = Path(self.NGINX_CONF_DIR).joinpath(
-            NGINX_HTTP_SERVER_DIR
-        )
-        self.NGINX_STREAM_UPSTREAM_DIR = Path(self.NGINX_CONF_DIR).joinpath(
+        self.NGINX_HTTP_SERVER_DIR = self.NGINX_CONF_DIR.joinpath(NGINX_HTTP_SERVER_DIR)
+        self.NGINX_STREAM_UPSTREAM_DIR = self.NGINX_CONF_DIR.joinpath(
             NGINX_STREAM_UPSTREAM_DIR
         )
-        self.NGINX_STREAM_SERVER_DIR = Path(self.NGINX_CONF_DIR).joinpath(
+        self.NGINX_STREAM_SERVER_DIR = self.NGINX_CONF_DIR.joinpath(
             NGINX_STREAM_SERVER_DIR
         )
-        self.NGINX_MAIL_SERVER_DIR = Path(self.NGINX_CONF_DIR).joinpath(
-            NGINX_MAIL_SERVER_DIR
-        )
+        self.NGINX_MAIL_SERVER_DIR = self.NGINX_CONF_DIR.joinpath(NGINX_MAIL_SERVER_DIR)
 
     def __call__(self, *args, **kwargs):
         # parse nginx.toml
-        self.config = load_config(self.CONFIG_NGINX_TOML)
+        self.config = get_config_from_file(self.CONFIG_NGINX_TOML)
 
         logger.info(f"Generate {self.NGINX_HTTP_SERVER_DIR}/*.conf ...")
         # generate http_default.conf

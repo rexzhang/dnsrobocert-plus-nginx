@@ -14,9 +14,9 @@ mkdir -p /logs/nginx
 mkdir -p /logs/plush
 
 # call plush init
-run_plush_generate="python -m plush init"
+run_plush_generate="python -m plush generate"
 while ! $run_plush_generate; do
-    echo "Run plush init failed, retrying..."
+    echo "Run plush generate failed, retrying..."
     sleep 1
 done
 
@@ -29,7 +29,7 @@ while ! $start_nginx_service; do
 done
 
 # start cron
-#supercronic /tmp/crontabs 2>&1 | tee -a /logs/supercronic.log > /proc/1/fd/1 &
+#supercronic "$PLUSH_CRONTAB_FILE" 2>&1 | tee -a /logs/supercronic.log > /proc/1/fd/1 &
 exec /usr/bin/supercronic "$PLUSH_CRONTAB_FILE" > /proc/1/fd/1 2>&1
 
 # for dev

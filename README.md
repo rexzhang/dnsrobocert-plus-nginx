@@ -123,14 +123,27 @@ Please `http2` turn off all services under the same port, which is a feature of 
 ### `nginx.toml` Parser
 
 ```shell
-python -m plush generate --nginx-conf-dir /tmp --config-nginx-toml examples/nginx.toml
+python -m plush generate --config-nginx-toml examples/nginx.toml
 ```
 
 ### Test logrotate
 
 ```shell
-logrotate --debug /etc/logrotate.conf
+logrotate --debug /data/logrotate.conf
 ```
+
+## Memo
+
+- 配置信息规划
+  - nginx 配置复杂,使用一个统一的 nginx.toml 来管理所有配置信息
+  - 其他应用的优先使用环境变量,未来数量过多后整合到 plush.toml
+  - 一旦有了 plush.toml, 就考虑将 nginx.toml 也整合进去
+- 文件路径规划
+  - 如何可能,容器执行过程中产生的除了日志以外的其他文件都放在 /data
+  - 因为权限原因,或者容器重启后需要丢弃的放 /tmp
+- 代码中默认值存放规划
+  - 环境变量调整的 deploy_stage.py
+  - 配置文件/命令行参数调整的 constans.py
 
 ## TODO
 

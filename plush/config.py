@@ -1,6 +1,7 @@
 import tomllib
 from dataclasses import KW_ONLY, dataclass, field
 from logging import getLogger
+from pathlib import Path
 
 from dataclass_wizard import JSONWizard
 from dataclass_wizard.v1 import Alias
@@ -131,7 +132,7 @@ class Config(JSONWizard):
     mail_server: list[MailServer] = field(default_factory=list)
 
 
-def load_config(toml_file: str) -> Config:
+def get_config_from_file(toml_file: str | Path) -> Config:
     # parse nginx.toml
     try:
         with open(toml_file, "rb") as f:

@@ -5,6 +5,8 @@ from pathlib import Path
 from plush.config import HttpServer, MailServer, ServerAbc, SSLCert, StreamServer
 from plush.tempalte import Template
 
+from ..deploy_stage import get_file_path
+
 logger = getLogger("plush.nginx")
 
 
