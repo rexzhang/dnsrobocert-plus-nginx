@@ -48,5 +48,5 @@ def generate_logrotate_conf():
     with open(filename, "w") as f:
         f.write(conf_content)
 
-    message = f"logrotate file: {filename} generate finished."
+    message = f"Generate logrotate file: {filename} finished."
     logger.info(message)

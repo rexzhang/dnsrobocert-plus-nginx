@@ -1,9 +1,8 @@
 from logging import getLogger
 
-from plush.config import StreamServer
-from plush.nginx.common import GenerateOneServerConfAbc
-
+from ..config import StreamServer
 from ..tempalte import Template
+from .common import GenerateOneServerConfAbc
 
 logger = getLogger(__name__)
 stream_conf_template_main_no_ssl = """

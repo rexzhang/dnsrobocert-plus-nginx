@@ -2,10 +2,8 @@ import builtins
 from logging import getLogger
 from pathlib import Path
 
-from plush.config import HttpServer, MailServer, ServerAbc, SSLCert, StreamServer
-from plush.tempalte import Template
-
-from ..deploy_stage import get_file_path
+from ..config import HttpServer, MailServer, ServerAbc, SSLCert, StreamServer
+from ..tempalte import Template
 
 logger = getLogger("plush.nginx")
 

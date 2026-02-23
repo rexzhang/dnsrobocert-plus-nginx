@@ -22,5 +22,5 @@ def update_crontab_file():
     job.setall(EV.CRONTAB_LOGROTATE)
     cron.write(filename)
 
-    message = f"crontab file: {filename} created/updated."
+    message = f"Generate/update crontab file: {filename} finished."
     logger.info(message)

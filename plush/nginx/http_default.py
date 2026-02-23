@@ -1,8 +1,8 @@
 from pathlib import Path
 
-from plush.config import HttpDeafult
-from plush.nginx.common import GenerateOneConfAbc
-from plush.tempalte import Template
+from ..config import HttpDeafult
+from ..tempalte import Template
+from .common import GenerateOneConfAbc
 
 http_default_listen = [80, 443]
 http_default_listen_ssl = [443]

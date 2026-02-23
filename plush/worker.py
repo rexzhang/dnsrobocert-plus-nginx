@@ -4,9 +4,8 @@ import time
 from logging import Formatter, getLogger
 from logging.handlers import WatchedFileHandler
 
-from plush.constants import NGINX_RELOAD_SH, WORKER_LOG, WORKER_PID
-from plush.daemon_runner import DaemonRunner
-
+from .constants import NGINX_RELOAD_SH, WORKER_LOG, WORKER_PID
+from .daemon_runner import DaemonRunner
 from .deploy_stage import EV, DeployStage, get_file_path
 
 logger = getLogger(__name__)

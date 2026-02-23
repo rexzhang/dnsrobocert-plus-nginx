@@ -1,8 +1,8 @@
 from pathlib import Path
 
-from plush.config import Upstream
-from plush.nginx.common import GenerateOneConfAbc
-from plush.tempalte import Template
+from ..config import Upstream
+from ..tempalte import Template
+from .common import GenerateOneConfAbc
 
 upstream_conf_tempalte = """upstream {{ upstream_name }} {
     {{ upstream_content }}

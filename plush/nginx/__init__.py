@@ -1,8 +1,8 @@
 from logging import getLogger
 from pathlib import Path
 
-from plush.config import Config, get_config_from_file
-from plush.constants import (
+from ..config import Config, get_config_from_file
+from ..constants import (
     NGINX_HTTP_DEFAULT_CONF,
     NGINX_HTTP_SERVER_DIR,
     NGINX_HTTP_UPSTREAM_DIR,
@@ -10,13 +10,12 @@ from plush.constants import (
     NGINX_STREAM_SERVER_DIR,
     NGINX_STREAM_UPSTREAM_DIR,
 )
-from plush.nginx.http_default import GenerateHttpDefaultConf
-from plush.nginx.http_server import GenerateOneHttpServerConf
-from plush.nginx.stream_server import GenerateOneStreamServerConf
-from plush.nginx.upstream import GenerateOneUpstreamConf
-
-from .mail_server import GenerateOneMailServerConf
 from ..deploy_stage import get_file_path
+from .http_default import GenerateHttpDefaultConf
+from .http_server import GenerateOneHttpServerConf
+from .mail_server import GenerateOneMailServerConf
+from .stream_server import GenerateOneStreamServerConf
+from .upstream import GenerateOneUpstreamConf
 
 logger = getLogger(__name__)
 

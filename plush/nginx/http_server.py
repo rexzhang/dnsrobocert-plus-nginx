@@ -1,8 +1,8 @@
 from logging import getLogger
 
-from plush.config import HttpServer
-from plush.nginx.common import GenerateOneServerConfAbc
-from plush.tempalte import Template
+from ..config import HttpServer
+from ..tempalte import Template
+from .common import GenerateOneServerConfAbc
 
 logger = getLogger("plush.nginx")
 
