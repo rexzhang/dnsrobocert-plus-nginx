@@ -5,7 +5,7 @@ jinja2
 typer
 
 # Config file
-dataclass-wizard[dotenv]>=0.35.4
+dataclass-wizard[dotenv]>=1.0.0
 
 # background task
 python-daemon
