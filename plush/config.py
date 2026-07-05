@@ -4,7 +4,7 @@ from logging import getLogger
 from pathlib import Path
 
 from dataclass_wizard import JSONWizard
-from dataclass_wizard.v1 import Alias
+from dataclass_wizard import Alias
 
 from .constants import (
     DNSROBOCERT_SSL_FILE_DIR,
