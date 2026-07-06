@@ -1,10 +1,9 @@
 import tomllib
-from dataclasses import KW_ONLY, dataclass, field
+from dataclasses import KW_ONLY, field
 from logging import getLogger
 from pathlib import Path
 
-from dataclass_wizard import JSONWizard
-from dataclass_wizard import Alias
+from dataclass_wizard import Alias, DataclassWizard
 
 from .constants import (
     DNSROBOCERT_SSL_FILE_DIR,
@@ -16,8 +15,7 @@ from .constants import (
 logger = getLogger(__name__)
 
 
-@dataclass
-class SSLCert:
+class SSLCert(DataclassWizard):
     pem_file_base_path: str = DNSROBOCERT_SSL_FILE_DIR
 
     default_ssl_cert_domain: str = Alias(
@@ -25,8 +23,7 @@ class SSLCert:
     )
 
 
-@dataclass
-class HttpDeafult:
+class HttpDeafult(DataclassWizard):
     http_default_listen: list[int] = field(
         default_factory=lambda: [NGINX_HTTP_DEFAULT_LISTEN]
     )
@@ -35,8 +32,7 @@ class HttpDeafult:
     )
 
 
-@dataclass
-class Upstream:
+class Upstream(DataclassWizard):
     # 配置文件兼容 http upstream 和 stream upstream
     enable: bool = True
 
@@ -44,8 +40,7 @@ class Upstream:
     content: str = field(default_factory=str)
 
 
-@dataclass
-class ServerAbc:
+class ServerAbc(DataclassWizard):
     enable: bool = True
 
     listen: int | None = None
@@ -54,7 +49,6 @@ class ServerAbc:
     ssl_cert_domain: str | None = None
 
 
-@dataclass
 class HttpServer(ServerAbc):
     server_name: str = field(default_factory=str)
 
@@ -63,6 +57,10 @@ class HttpServer(ServerAbc):
 
     root_path: str | None = None
     proxy_pass: str | None = None
+    redirect_domain: str | None = None
+    return_301: str | None = None
+    return_444: str | None = None
+
     location: dict[str, str] = field(default_factory=dict)
 
     client_max_body_size: str | None = None
@@ -75,7 +73,6 @@ class HttpServer(ServerAbc):
         return self.server_name
 
 
-@dataclass
 class StreamServer(ServerAbc):
     comment: str = "---"
 
@@ -96,7 +93,6 @@ class StreamServer(ServerAbc):
         return result
 
 
-@dataclass
 class MailServer(ServerAbc):
     type: NginxMailServerType = NginxMailServerType.SSL
     port: int = 465
@@ -111,10 +107,10 @@ class MailServer(ServerAbc):
         return f"mail_server_{self.type.value}_p{self.port}"
 
 
-@dataclass
-class Config(JSONWizard):
-    class _(JSONWizard.Meta):
-        v1 = True
+class Config(DataclassWizard):
+    class _(DataclassWizard.Meta):
+        # v1 = True
+        pass
 
     ssl_cert: SSLCert = Alias(load=["ssl_cert", "common", "default"])
 

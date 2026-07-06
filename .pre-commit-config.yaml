@@ -5,12 +5,12 @@ repos:
       - id: pyupgrade
         args: [--py314-plus]
   - repo: https://github.com/psf/black
-    rev: 26.1.0
+    rev: 26.5.1
     hooks:
       - id: black
         args: ["--target-version", "py314"]
   - repo: https://github.com/pycqa/isort
-    rev: 8.0.0
+    rev: 9.0.0a3
     hooks:
       - id: isort
         name: isort (python)
