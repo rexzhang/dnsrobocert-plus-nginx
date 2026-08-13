@@ -13,11 +13,11 @@ ENV PLUSH_LOGROTATE_ROTATE="10"
 ENV DNSROBOCERT="enable"
 ENV TLDEXTRACT_CACHE_PATH=/data/lexicon_tld_set
 
-
-RUN if [ "$BUILD_ENV" = "rex" ]; then echo "Change depends" && \
-    pip config set global.index-url https://proxpi.h.rexzhang.com/index/ && \
-    pip config set install.trusted-host proxpi.h.rexzhang.com && \
-    sed -i 's/dl-cdn.alpinelinux.org/mirrors.ustc.edu.cn/g' /etc/apk/repositories \
+ARG BUILD_ENV
+RUN if [ "$BUILD_ENV" = "rex" ]; then echo "Change depends" \
+    && sed -i 's/dl-cdn.alpinelinux.org/ustc.mirror.h.rexzhang.com/g' /etc/apk/repositories \
+    && pip config set global.index-url https://proxpi.h.rexzhang.com/index/ \
+    && pip config set install.trusted-host proxpi.h.rexzhang.com \
     ; fi
 
 COPY requirements.d /app/requirements.d
