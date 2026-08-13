@@ -1,9 +1,10 @@
 import tomllib
-from dataclasses import KW_ONLY, field
+from dataclasses import KW_ONLY, dataclass, field
 from logging import getLogger
 from pathlib import Path
 
-from dataclass_wizard import Alias, DataclassWizard
+from dataclass_wizard import Alias
+from dataclass_wizard.mixins.toml import TOMLWizard
 
 from .constants import (
     DNSROBOCERT_SSL_FILE_DIR,
@@ -15,7 +16,8 @@ from .constants import (
 logger = getLogger(__name__)
 
 
-class SSLCert(DataclassWizard):
+@dataclass
+class SSLCert:
     pem_file_base_path: str = DNSROBOCERT_SSL_FILE_DIR
 
     default_ssl_cert_domain: str = Alias(
@@ -23,7 +25,8 @@ class SSLCert(DataclassWizard):
     )
 
 
-class HttpDeafult(DataclassWizard):
+@dataclass
+class HttpDeafult:
     http_default_listen: list[int] = field(
         default_factory=lambda: [NGINX_HTTP_DEFAULT_LISTEN]
     )
@@ -32,7 +35,8 @@ class HttpDeafult(DataclassWizard):
     )
 
 
-class Upstream(DataclassWizard):
+@dataclass
+class Upstream:
     # 配置文件兼容 http upstream 和 stream upstream
     enable: bool = True
 
@@ -40,7 +44,8 @@ class Upstream(DataclassWizard):
     content: str = field(default_factory=str)
 
 
-class ServerAbc(DataclassWizard):
+@dataclass
+class ServerAbc:
     enable: bool = True
 
     listen: int | None = None
@@ -49,6 +54,7 @@ class ServerAbc(DataclassWizard):
     ssl_cert_domain: str | None = None
 
 
+@dataclass
 class HttpServer(ServerAbc):
     server_name: str = field(default_factory=str)
 
@@ -73,6 +79,7 @@ class HttpServer(ServerAbc):
         return self.server_name
 
 
+@dataclass
 class StreamServer(ServerAbc):
     comment: str = "---"
 
@@ -93,6 +100,7 @@ class StreamServer(ServerAbc):
         return result
 
 
+@dataclass
 class MailServer(ServerAbc):
     type: NginxMailServerType = NginxMailServerType.SSL
     port: int = 465
@@ -107,11 +115,8 @@ class MailServer(ServerAbc):
         return f"mail_server_{self.type.value}_p{self.port}"
 
 
-class Config(DataclassWizard):
-    class _(DataclassWizard.Meta):
-        # v1 = True
-        pass
-
+@dataclass
+class Config(TOMLWizard):
     ssl_cert: SSLCert = Alias(load=["ssl_cert", "common", "default"])
 
     http_default: HttpDeafult = field(default_factory=HttpDeafult)
@@ -128,24 +133,16 @@ class Config(DataclassWizard):
     mail_server: list[MailServer] = field(default_factory=list)
 
 
-def get_config_from_file(toml_file: str | Path) -> Config:
-    # parse nginx.toml
+def get_config_from_file(file: str | Path) -> Config:
     try:
-        with open(toml_file, "rb") as f:
-            config_obj = tomllib.load(f)
+        config: Config = Config.from_toml_file(file=file)  # type: ignore
 
     except FileNotFoundError as e:
-        logger.critical(f"Open file {toml_file} failed, {e}")
-        exit(1)
-    except tomllib.TOMLDecodeError as e:
-        logger.critical(f"Parse file {toml_file} failed, {e}")
+        logger.critical(f"Open file {file} failed, {e}")
         exit(1)
 
-    # convert to Config
-    try:
-        config = Config.from_dict(config_obj)
-    except TypeError as e:
-        logger.critical(f"Parse file {toml_file} failed, {e}")
+    except tomllib.TOMLDecodeError as e:
+        logger.critical(f"Parse file {file} failed, {e}")
         exit(1)
 
     return config
