@@ -1,4 +1,4 @@
-dnsrobocert==3.27.1
+dnsrobocert==3.28.0
 jinja2
 
 # CLI
