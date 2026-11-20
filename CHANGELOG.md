@@ -2,6 +2,8 @@
 
 ## Next
 
+## 4.3.0 - 20261120
+
 - chore: change cron:update to every day
 - depends: update dataclass-wizard to 1.0
 
